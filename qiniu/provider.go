@@ -22,6 +22,7 @@ func Provider() terraform.ResourceProvider {
 			},
 			"use_https": {
 				Type:        schema.TypeBool,
+				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("QINIU_USE_HTTPS", false),
 			},
 		},

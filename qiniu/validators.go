@@ -21,7 +21,7 @@ func validateBucketName(v interface{}, attributeName string) (warns []string, er
 		errs = append(errs, fmt.Errorf("%q must not be longer than 63 characters", attributeName))
 		return
 	}
-	if invalidBucketNameRegex.MatchString(bucketName) {
+	if !invalidBucketNameRegex.MatchString(bucketName) {
 		errs = append(errs, fmt.Errorf("%q must not contain invalid characters", attributeName))
 		return
 	}
