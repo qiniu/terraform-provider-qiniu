@@ -84,15 +84,28 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 }
 
 func resourceUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (err error) {
+	if err = resourcePartialUpdateQiniuBucket(d, m); err != nil {
+		return
+	}
+	return resourceReadQiniuBucket(d, m)
+}
+
+func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (err error) {
 	bucketManager := m.(*Client).BucketManager
 	bucketName := d.Id()
-	if d.Get("private").(bool) {
-		if err = bucketManager.MakeBucketPrivate(bucketName); err != nil {
-			return
-		}
-	} else {
-		if err = bucketManager.MakeBucketPublic(bucketName); err != nil {
-			return
+
+	d.Partial(true)
+	defer d.Partial(false)
+
+	if d.HasChange("private") {
+		if d.Get("private").(bool) {
+			if err = bucketManager.MakeBucketPrivate(bucketName); err != nil {
+				return
+			}
+		} else {
+			if err = bucketManager.MakeBucketPublic(bucketName); err != nil {
+				return
+			}
 		}
 	}
 	return nil
