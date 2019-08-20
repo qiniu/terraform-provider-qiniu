@@ -7,7 +7,7 @@
 - [![Build Status](https://api.travis-ci.org/bachue/terraform-provider-qiniu.svg?branch=master)](https://travis-ci.org/bachue/terraform-provider-qiniu)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
 
-<img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px"> 
+<img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px">
 <img src="https://mars-assets.qnssl.com/qiniulog/img-slogan-blue-en.png" alt="Qiniu Cloud">
 
 Requirements
@@ -35,7 +35,7 @@ $ make
 Using the Provider
 ----------------------
 
-```
+```hcl
 # Configure Qiniu Account
 provider "qiniu" {
   access_key = "<Qiniu Access Key>"
@@ -47,6 +47,12 @@ resource "qiniu_bucket" "basic_bucket" {
   name      = "basic-test-terraform-1"  # Bucket Name
   region_id = "z0"                      # Bucket Region, "z0" means East China
   private   = false                     # Public bucket
+}
+
+# Qiniu Buckets Data Source
+data "qiniu_buckets" "z1" {
+    name_regex = "^bucket-"
+    region_id = "z1"
 }
 ```
 
