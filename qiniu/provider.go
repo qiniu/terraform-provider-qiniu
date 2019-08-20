@@ -29,6 +29,9 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"qiniu_bucket": resourceQiniuBucket(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"qiniu_buckets": dataSourceQiniuBuckets(),
+		},
 		ConfigureFunc: providerConfigure,
 	}
 }

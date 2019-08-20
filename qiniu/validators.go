@@ -38,3 +38,10 @@ func validateRegionID(v interface{}, attributeName string) (warns []string, errs
 		return
 	}
 }
+
+func validateRegex(v interface{}, attributeName string) (warns []string, errs []error) {
+	if _, err := regexp.Compile(v.(string)); err != nil {
+		errs = append(errs, fmt.Errorf("%q contains an invalid regular expression", attributeName))
+	}
+	return
+}
