@@ -31,12 +31,12 @@ func resourceQiniuBucket() *schema.Resource {
 			"private": {
 				Type:        schema.TypeBool,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Privately access to the bucket",
 			},
 		},
 		Create: resourceCreateQiniuBucket,
 		Read:   resourceReadQiniuBucket,
+		Update: resourceUpdateQiniuBucket,
 		Delete: resourceDeleteQiniuBucket,
 		Exists: resourceExistsQiniuBucket,
 		Importer: &schema.ResourceImporter{
@@ -80,6 +80,21 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	d.Set("name", bucketName)
 	d.Set("region_id", bucketInfo.Region)
 	d.Set("private", bucketInfo.IsPrivate())
+	return nil
+}
+
+func resourceUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (err error) {
+	bucketManager := m.(*Client).BucketManager
+	bucketName := d.Id()
+	if d.Get("private").(bool) {
+		if err = bucketManager.MakeBucketPrivate(bucketName); err != nil {
+			return
+		}
+	} else {
+		if err = bucketManager.MakeBucketPublic(bucketName); err != nil {
+			return
+		}
+	}
 	return nil
 }
 
