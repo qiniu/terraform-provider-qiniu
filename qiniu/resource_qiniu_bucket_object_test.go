@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	. "github.com/onsi/ginkgo"
@@ -70,6 +71,57 @@ resource "qiniu_bucket_object" "test_object" {
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_length", fmt.Sprintf("%d", len(content))),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_etag", "FmO9UHw3jb69Wfd4U96mxMLDn37X"),
 				),
+			}},
+		})
+	})
+
+	It("should accept source or content", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucketObject"), resource.TestCase{
+			PreCheck:  testPreCheck,
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket_object" "test_object" {
+    bucket = "z0-bucket"
+    key = "file.txt"
+}
+                `,
+				ExpectError: regexp.MustCompile("Neither \"source\" nor \"content\" is specified"),
+			}},
+		})
+	})
+
+	It("should accept either source or content", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucketObject"), resource.TestCase{
+			PreCheck:  testPreCheck,
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket_object" "test_object" {
+    bucket = "z0-bucket"
+    key = "file.txt"
+    source = "/etc/services"
+    content = "abcdef"
+}
+                `,
+				ExpectError: regexp.MustCompile("conflicts with"),
+			}},
+		})
+	})
+
+	It("should reject if source is invalid", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucketObject"), resource.TestCase{
+			PreCheck:  testPreCheck,
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket_object" "test_object" {
+    bucket = "z0-bucket"
+    key = "file.txt"
+    source = "/not/existed"
+}
+                `,
+				ExpectError: regexp.MustCompile("no such file or directory"),
 			}},
 		})
 	})

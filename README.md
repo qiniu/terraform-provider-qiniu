@@ -49,6 +49,13 @@ resource "qiniu_bucket" "basic_bucket" {
   private   = false                     # Public bucket
 }
 
+# Create Qiniu Object
+resource "qiniu_bucket_object" "basic_object" {
+  bucket    = "basic-test-terraform-1"  # Bucket Name
+  key       = "qiniu-key"               # File Key
+  source    = "/path/to/file"           # File Path to upload
+}
+
 # Qiniu Buckets Data Source
 data "qiniu_buckets" "z1" {
     name_regex = "^bucket-"
