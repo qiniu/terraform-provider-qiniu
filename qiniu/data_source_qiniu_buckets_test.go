@@ -12,7 +12,7 @@ var _ = Describe("dataSourceQiniuBuckets", func() {
 		resource.Test(MakeT("TestCreateAndListQiniuBuckets"), resource.TestCase{
 			PreCheck:     testPreCheck,
 			Providers:    providers,
-			CheckDestroy: testCheckQiniuBucketItemDestroy,
+			CheckDestroy: testCheckQiniuResourceDestroy,
 			Steps: []resource.TestStep{{
 				Config: `
 resource "qiniu_bucket" "basic_bucket_1" {
@@ -33,7 +33,7 @@ resource "qiniu_bucket" "basic_bucket_3" {
     private = true
 }
                 `,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket_1"),
 					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket_2"),
 					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket_3"),

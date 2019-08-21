@@ -1,7 +1,9 @@
 package qiniu_test
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -26,6 +28,63 @@ func init() {
 func testPreCheck() {
 	Expect(os.Getenv("QINIU_ACCESS_KEY")).NotTo(BeEmpty())
 	Expect(os.Getenv("QINIU_SECRET_KEY")).NotTo(BeEmpty())
+}
+
+func testCheckQiniuBucketItemExists(resource string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resource]
+		if !ok {
+			return fmt.Errorf("Not found: %s", resource)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No Record ID is set")
+		}
+		bucketName := rs.Primary.ID
+		client := qiniuProvider.Meta().(*qiniu.Client)
+		_, err := client.BucketManager.GetBucketInfo(bucketName)
+		return err
+	}
+}
+
+func testCheckQiniuBucketObjectItemExists(resource string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resource]
+		if !ok {
+			return fmt.Errorf("Not found: %s", resource)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No Record ID is set")
+		}
+		client := qiniuProvider.Meta().(*qiniu.Client)
+		bucketName, key := getBucketNameAndKeyFromEntry(rs.Primary.ID)
+		_, err := client.BucketManager.Stat(bucketName, key)
+		return err
+	}
+}
+
+func testCheckQiniuResourceDestroy(s *terraform.State) (err error) {
+	client := qiniuProvider.Meta().(*qiniu.Client)
+
+	for _, rs := range s.RootModule().Resources {
+		switch rs.Type {
+		case "qiniu_bucket":
+			bucketName := rs.Primary.ID
+			if _, err = client.BucketManager.GetBucketInfo(bucketName); err == nil {
+				return fmt.Errorf("Bucket still exists")
+			} else if !qiniu.IsResourceNotFound(err) {
+				return
+			}
+		case "qiniu_bucket_object":
+			bucketName, key := getBucketNameAndKeyFromEntry(rs.Primary.ID)
+			if _, err = client.BucketManager.Stat(bucketName, key); err == nil {
+				return fmt.Errorf("Bucket Object still exists")
+			} else if !qiniu.IsResourceNotFound(err) {
+				return
+			}
+		}
+	}
+
+	return nil
 }
 
 type T struct {
@@ -55,4 +114,13 @@ func (t *T) Name() string {
 
 func (t *T) Parallel() {
 	t.ginkgoT.Parallel()
+}
+
+func getBucketNameAndKeyFromEntry(entry string) (bucket string, key string) {
+	parts := strings.SplitN(entry, ":", 2)
+	return parts[0], parts[1]
+}
+
+func getEntryFromBucketNameAndKey(bucket string, key string) (entry string) {
+	return bucket + ":" + key
 }

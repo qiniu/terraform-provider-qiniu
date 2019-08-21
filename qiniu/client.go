@@ -6,6 +6,7 @@ import (
 )
 
 type Client struct {
-	Auth          *qiniu_auth.Credentials
-	BucketManager *qiniu_storage.BucketManager
+	Auth           *qiniu_auth.Credentials
+	BucketManager  *qiniu_storage.BucketManager
+	ResumeUploader *qiniu_storage.ResumeUploader
 }

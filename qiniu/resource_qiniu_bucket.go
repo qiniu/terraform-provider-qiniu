@@ -69,14 +69,13 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	bucketInfo, err = bucketManager.GetBucketInfo(bucketName)
 
 	if err != nil {
-		if IsBucketNotFound(err) {
+		if IsResourceNotFound(err) {
 			d.SetId("")
 			return nil
 		} else {
 			return err
 		}
 	}
-	d.SetId(bucketName)
 	d.Set("name", bucketName)
 	d.Set("region_id", bucketInfo.Region)
 	d.Set("private", bucketInfo.IsPrivate())
@@ -116,7 +115,7 @@ func resourceDeleteQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 	bucketName := d.Id()
 
 	if err = bucketManager.DropBucket(bucketName); err != nil {
-		if !IsBucketNotFound(err) {
+		if !IsResourceNotFound(err) {
 			return err
 		}
 	}
@@ -129,16 +128,16 @@ func resourceExistsQiniuBucket(d *schema.ResourceData, m interface{}) (bool, err
 	bucketName := d.Get("name").(string)
 	if _, err := bucketManager.GetBucketInfo(bucketName); err == nil {
 		return true, nil
-	} else if IsBucketNotFound(err) {
+	} else if IsResourceNotFound(err) {
 		return false, nil
 	} else {
 		return false, err
 	}
 }
 
-func IsBucketNotFound(err error) bool {
+func IsResourceNotFound(err error) bool {
 	if qiniuErr, ok := err.(*qiniu_client.ErrorInfo); ok {
-		return qiniuErr.Code == HTTP_STATUS_RESOURCE_NOT_FOUND || qiniuErr.Code == HTTP_STATUS_BUCKET_NOT_FOUND
+		return qiniuErr.HttpCode() == HTTP_STATUS_RESOURCE_NOT_FOUND || qiniuErr.HttpCode() == HTTP_STATUS_BUCKET_NOT_FOUND
 	}
 	return false
 }
