@@ -3,7 +3,9 @@ package qiniu_test
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -28,6 +30,10 @@ func init() {
 func testPreCheck() {
 	Expect(os.Getenv("QINIU_ACCESS_KEY")).NotTo(BeEmpty())
 	Expect(os.Getenv("QINIU_SECRET_KEY")).NotTo(BeEmpty())
+}
+
+func timeString() string {
+	return strconv.FormatInt(time.Now().UnixNano(), 36)
 }
 
 func testCheckQiniuBucketItemExists(resource string) resource.TestCheckFunc {

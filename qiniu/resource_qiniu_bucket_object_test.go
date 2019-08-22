@@ -14,6 +14,7 @@ import (
 
 var _ = Describe("resourceQiniuBucketObject", func() {
 	It("should create qiniu bucket object", func() {
+		randomString := timeString()
 		tmpFile, err := ioutil.TempFile("", "")
 		Expect(err).NotTo(HaveOccurred())
 		defer os.Remove(tmpFile.Name())
@@ -28,7 +29,7 @@ var _ = Describe("resourceQiniuBucketObject", func() {
 			Steps: []resource.TestStep{{
 				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "basic_bucket" {
-    name = "terraform-object-test-1"
+    name = "terraform-object-test-%s"
     region_id = "z1"
     private = true
 }
@@ -38,14 +39,14 @@ resource "qiniu_bucket_object" "test_object" {
     key = "file-1.txt"
     source = %q
 }
-                `, tmpFile.Name()),
+                `, randomString, tmpFile.Name()),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket"),
 					testCheckQiniuBucketObjectItemExists("qiniu_bucket_object.test_object"),
-					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "name", "terraform-object-test-1"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "name", fmt.Sprintf("terraform-object-test-%s", randomString)),
 					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "region_id", "z1"),
 					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "private", "true"),
-					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", "terraform-object-test-1"),
+					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", fmt.Sprintf("terraform-object-test-%s", randomString)),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "key", "file-1.txt"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_type", "text/plain"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_length", fmt.Sprintf("%d", len("hello world"))),
@@ -56,7 +57,10 @@ resource "qiniu_bucket_object" "test_object" {
 	})
 
 	It("should create qiniu bucket object and upload content", func() {
-		var content = ""
+		var (
+			randomString = timeString()
+			content      = ""
+		)
 		for i := 0; i < 100; i++ {
 			content += "hello world"
 		}
@@ -68,7 +72,7 @@ resource "qiniu_bucket_object" "test_object" {
 			Steps: []resource.TestStep{{
 				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "basic_bucket" {
-    name = "terraform-object-test-2"
+    name = "terraform-object-test-%s"
     region_id = "z0"
     private = false
 }
@@ -78,14 +82,14 @@ resource "qiniu_bucket_object" "test_object" {
     key = "file-2.txt"
     content = %q
 }
-	                `, content),
+	                `, randomString, content),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket"),
 					testCheckQiniuBucketObjectItemExists("qiniu_bucket_object.test_object"),
-					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "name", "terraform-object-test-2"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "name", fmt.Sprintf("terraform-object-test-%s", randomString)),
 					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "region_id", "z0"),
 					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "private", "false"),
-					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", "terraform-object-test-2"),
+					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", fmt.Sprintf("terraform-object-test-%s", randomString)),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "key", "file-2.txt"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_type", "text/plain"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_length", fmt.Sprintf("%d", len(content))),

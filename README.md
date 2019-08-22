@@ -61,6 +61,11 @@ data "qiniu_buckets" "z1" {
     name_regex = "^bucket-"
     region_id = "z1"
 }
+
+# Qiniu Buckets Objects Data Source
+data "qiniu_buckets_objects" "all" {
+    bucket = "basic-test-terraform-1"
+}
 ```
 
 Developing the Provider

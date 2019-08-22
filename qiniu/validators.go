@@ -45,3 +45,10 @@ func validateRegex(v interface{}, attributeName string) (warns []string, errs []
 	}
 	return
 }
+
+func validatePositiveInt(v interface{}, attributeName string) (warns []string, errs []error) {
+	if v.(int) <= 0 {
+		errs = append(errs, fmt.Errorf("%q must be positive", attributeName))
+	}
+	return
+}
