@@ -27,15 +27,25 @@ var _ = Describe("resourceQiniuBucketObject", func() {
 			CheckDestroy: testCheckQiniuResourceDestroy,
 			Steps: []resource.TestStep{{
 				Config: fmt.Sprintf(`
+resource "qiniu_bucket" "basic_bucket" {
+    name = "terraform-object-test-1"
+    region_id = "z1"
+    private = true
+}
+
 resource "qiniu_bucket_object" "test_object" {
-    bucket = "z1-bucket"
+    bucket = "${qiniu_bucket.basic_bucket.name}"
     key = "file-1.txt"
     source = %q
 }
                 `, tmpFile.Name()),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket"),
 					testCheckQiniuBucketObjectItemExists("qiniu_bucket_object.test_object"),
-					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", "z1-bucket"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "name", "terraform-object-test-1"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "region_id", "z1"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "private", "true"),
+					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", "terraform-object-test-1"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "key", "file-1.txt"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_type", "text/plain"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_length", fmt.Sprintf("%d", len("hello world"))),
@@ -57,15 +67,25 @@ resource "qiniu_bucket_object" "test_object" {
 			CheckDestroy: testCheckQiniuResourceDestroy,
 			Steps: []resource.TestStep{{
 				Config: fmt.Sprintf(`
+resource "qiniu_bucket" "basic_bucket" {
+    name = "terraform-object-test-2"
+    region_id = "z0"
+    private = false
+}
+
 resource "qiniu_bucket_object" "test_object" {
-    bucket = "z2-bucket"
+    bucket = "${qiniu_bucket.basic_bucket.name}"
     key = "file-2.txt"
     content = %q
 }
 	                `, content),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket"),
 					testCheckQiniuBucketObjectItemExists("qiniu_bucket_object.test_object"),
-					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", "z2-bucket"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "name", "terraform-object-test-2"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "region_id", "z0"),
+					resource.TestCheckResourceAttr("qiniu_bucket.basic_bucket", "private", "false"),
+					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "bucket", "terraform-object-test-2"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "key", "file-2.txt"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_type", "text/plain"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_length", fmt.Sprintf("%d", len(content))),
