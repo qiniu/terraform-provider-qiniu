@@ -1,8 +1,6 @@
 package qiniu
 
 import (
-	"log"
-	"os"
 	"regexp"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -68,10 +66,6 @@ func dataSourceQiniuBucketsRead(d *schema.ResourceData, m interface{}) (err erro
 		return
 	}
 	if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
-		file, _ := os.OpenFile("/tmp/1.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0600)
-		logger := log.New(file, "", 0)
-		logger.Printf("name_regex: %#v\n", v.(string))
-
 		nameRegexp := regexp.MustCompile(v.(string))
 		allBuckets := buckets
 		buckets = make([]qiniu_storage.BucketSummary, 0, len(allBuckets))
