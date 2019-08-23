@@ -2,6 +2,7 @@ package qiniu
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 )
 
@@ -39,16 +40,26 @@ func validateRegionID(v interface{}, attributeName string) (warns []string, errs
 	}
 }
 
-func validateRegex(v interface{}, attributeName string) (warns []string, errs []error) {
-	if _, err := regexp.Compile(v.(string)); err != nil {
-		errs = append(errs, fmt.Errorf("%q contains an invalid regular expression", attributeName))
+func validatePositiveInt(v interface{}, attributeName string) (warns []string, errs []error) {
+	if v.(int) <= 0 {
+		errs = append(errs, fmt.Errorf("%q must be positive", attributeName))
 	}
 	return
 }
 
-func validatePositiveInt(v interface{}, attributeName string) (warns []string, errs []error) {
-	if v.(int) <= 0 {
-		errs = append(errs, fmt.Errorf("%q must be positive", attributeName))
+func validateURL(v interface{}, attributeName string) (warns []string, errs []error) {
+	if u, err := url.ParseRequestURI(v.(string)); err != nil {
+		errs = append(errs, fmt.Errorf("%q must be valid url", attributeName))
+	} else if u.Scheme != "http" && u.Scheme != "https" {
+		errs = append(errs, fmt.Errorf("%q should be http or https protocol", attributeName))
+	}
+	return
+}
+
+func validateHost(v interface{}, attributeName string) (warns []string, errs []error) {
+	const r = "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$"
+	if !regexp.MustCompile(r).MatchString(v.(string)) {
+		errs = append(errs, fmt.Errorf("%q must be valid host", attributeName))
 	}
 	return
 }
