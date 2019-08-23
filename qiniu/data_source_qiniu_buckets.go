@@ -70,7 +70,6 @@ func dataSourceQiniuBucketsRead(d *schema.ResourceData, m interface{}) (err erro
 		allBuckets := buckets
 		buckets = make([]qiniu_storage.BucketSummary, 0, len(allBuckets))
 		for _, bucket := range allBuckets {
-			logger.Printf("match: %#v: %#v\n", bucket.Name, nameRegexp.MatchString(bucket.Name))
 			if nameRegexp.MatchString(bucket.Name) {
 				buckets = append(buckets, bucket)
 			}
