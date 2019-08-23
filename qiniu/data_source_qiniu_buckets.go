@@ -46,6 +46,14 @@ func dataSourceQiniuBuckets() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"image_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"image_host": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -88,9 +96,11 @@ func dataSourceQiniuBucketsAttributes(d *schema.ResourceData, buckets []qiniu_st
 
 	for _, bucket := range buckets {
 		attributes := map[string]interface{}{
-			"name":      bucket.Name,
-			"region_id": bucket.Info.Region,
-			"private":   bucket.Info.IsPrivate(),
+			"name":       bucket.Name,
+			"region_id":  bucket.Info.Region,
+			"private":    bucket.Info.IsPrivate(),
+			"image_url":  bucket.Info.Source,
+			"image_host": bucket.Info.Host,
 		}
 
 		ids = append(ids, bucket.Name)

@@ -48,7 +48,11 @@ func validatePositiveInt(v interface{}, attributeName string) (warns []string, e
 }
 
 func validateURL(v interface{}, attributeName string) (warns []string, errs []error) {
-	if u, err := url.ParseRequestURI(v.(string)); err != nil {
+	urlString := v.(string)
+	if urlString == "" {
+		return
+	}
+	if u, err := url.ParseRequestURI(urlString); err != nil {
 		errs = append(errs, fmt.Errorf("%q must be valid url", attributeName))
 	} else if u.Scheme != "http" && u.Scheme != "https" {
 		errs = append(errs, fmt.Errorf("%q should be http or https protocol", attributeName))
@@ -58,7 +62,11 @@ func validateURL(v interface{}, attributeName string) (warns []string, errs []er
 
 func validateHost(v interface{}, attributeName string) (warns []string, errs []error) {
 	const r = "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$"
-	if !regexp.MustCompile(r).MatchString(v.(string)) {
+	hostString := v.(string)
+	if hostString == "" {
+		return
+	}
+	if !regexp.MustCompile(r).MatchString(hostString) {
 		errs = append(errs, fmt.Errorf("%q must be valid host", attributeName))
 	}
 	return
