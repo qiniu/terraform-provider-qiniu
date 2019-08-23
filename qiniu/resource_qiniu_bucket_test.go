@@ -201,6 +201,22 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "image_url", "http://portal.qiniu.io"),
 					resource.TestCheckResourceAttr(resourceID, "image_host", "www.qiniu.com"),
 				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    private = true
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "true"),
+					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
+					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
+				),
 			}},
 		})
 	})

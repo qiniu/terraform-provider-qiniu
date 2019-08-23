@@ -68,7 +68,7 @@ data "qiniu_buckets" "all" {
     name_regex = "oo[xx"
 }
                 `,
-				ExpectError: regexp.MustCompile("contains an invalid regular expression"),
+				ExpectError: regexp.MustCompile("error parsing regexp"),
 			}, {
 				Config: `
 data "qiniu_buckets" "all" {

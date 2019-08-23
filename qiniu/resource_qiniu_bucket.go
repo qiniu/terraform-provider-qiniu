@@ -142,6 +142,9 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 	}
 
 	if d.HasChange("image_url") || d.HasChange("image_host") {
+		if err = bucketManager.UnsetImage(bucketName); err != nil {
+			return
+		}
 		if v, ok := d.GetOk("image_url"); ok {
 			imageURL := v.(string)
 			if v, ok = d.GetOk("image_host"); ok {
