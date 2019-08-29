@@ -1,5 +1,28 @@
 # Qiniu Cloud Provider 用户指南
 
+## 构建 Qiniu Cloud Provider
+
+下载 terraform-provider-qiniu 源码，构建后放入当前用户的 Terraform 插件目录
+
+```bash
+git clone git@github.com:qiniu/terraform-provider-qiniu.git --recurse-submodules
+cd terraform-provider-qiniu
+make
+mkdir -p ~/.terraform.d/plugins
+mv bin/terraform-provider-qiniu ~/.terraform.d/plugins
+```
+
+在 Windows 中，当前用户的 Terraform 插件目录路径为 `%APPDATA%\terraform.d\plugins`。
+
+## 准备 Terraform 执行计划
+
+1. 根据 [官方指南](https://www.terraform.io/downloads.html) 安装 Terraform
+2. 创建一个 Terraform 执行计划目录
+3. 创建 `main.tf` 文件，写入资源创建信息（见[使用案例](#使用案例)）
+4. 在执行计划目录执行 `terraform init` 命令初始化执行计划
+5. 在执行计划目录执行 `terraform plan` 命令准备执行计划
+6. 在执行计划目录执行 `terraform apply` 命令正式执行计划
+
 ## 使用案例
 
 ```hcl

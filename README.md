@@ -32,6 +32,13 @@ $ cd terraform-provider-qiniu
 $ make
 ```
 
+Install the provider
+
+```sh
+mkdir -p ~/.terraform.d/plugins
+mv bin/terraform-provider-qiniu ~/.terraform.d/plugins
+```
+
 Using the Provider
 ----------------------
 
