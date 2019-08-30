@@ -15,9 +15,8 @@ import (
 var _ = Describe("dataSourceQiniuBucketsObjects", func() {
 	It("should list qiniu buckets objects", func() {
 		var (
-			tmpFiles     = make([]*os.File, 3)
-			randomString = timeString()
-			err          error
+			tmpFiles = make([]*os.File, 3)
+			err      error
 		)
 		for i := 0; i < 3; i++ {
 			tmpFiles[i], err = ioutil.TempFile("", "")
@@ -38,49 +37,48 @@ var _ = Describe("dataSourceQiniuBucketsObjects", func() {
 			CheckDestroy: testCheckQiniuResourceDestroy,
 			Steps: []resource.TestStep{{
 				Config: fmt.Sprintf(`
-resource "qiniu_bucket" "basic_bucket" {
-    name = "object-test-terraform-%s"
-    region_id = "z0"
-    private = true
-}
-
 resource "qiniu_bucket_object" "test_object_1" {
-    bucket = "${qiniu_bucket.basic_bucket.name}"
-    key = "file-1.txt"
+    bucket = "z0-bucket"
+    key = "terraform-file-1.txt"
     source = %q
 }
 
 resource "qiniu_bucket_object" "test_object_2" {
-    bucket = "${qiniu_bucket.basic_bucket.name}"
-    key = "file-2.txt"
+    bucket = "z0-bucket"
+    key = "terraform-file-2.txt"
     source = %q
 }
 
 resource "qiniu_bucket_object" "test_object_3" {
-    bucket = "${qiniu_bucket.basic_bucket.name}"
-    key = "file-3.txt"
+    bucket = "z0-bucket"
+    key = "terraform-file-3.txt"
     source = %q
 }
-
-data "qiniu_buckets_objects" "all" {
-    bucket = "${qiniu_bucket.basic_bucket.name}"
-}
-
-data "qiniu_buckets_objects" "prefixed" {
-    bucket = "${qiniu_bucket.basic_bucket.name}"
-    prefix = "test-1"
-}
-
-data "qiniu_buckets_objects" "limited" {
-    bucket = "${qiniu_bucket.basic_bucket.name}"
-    limit = 2
-}
-                `, randomString, tmpFiles[0].Name(), tmpFiles[1].Name(), tmpFiles[2].Name()),
+                `, tmpFiles[0].Name(), tmpFiles[1].Name(), tmpFiles[2].Name()),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket"),
 					testCheckQiniuBucketObjectItemExists("qiniu_bucket_object.test_object_1"),
 					testCheckQiniuBucketObjectItemExists("qiniu_bucket_object.test_object_2"),
 					testCheckQiniuBucketObjectItemExists("qiniu_bucket_object.test_object_3"),
+				),
+			}, {
+				Config: `
+data "qiniu_buckets_objects" "all" {
+    bucket = "z0-bucket"
+    prefix = "terraform-file-"
+}
+
+data "qiniu_buckets_objects" "prefixed" {
+    bucket = "z0-bucket"
+    prefix = "terraform-file-1"
+}
+
+data "qiniu_buckets_objects" "limited" {
+    bucket = "z0-bucket"
+    prefix = "terraform-file-"
+    limit = 2
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.qiniu_buckets_objects.all", "keys.#", "3"),
 					resource.TestCheckResourceAttr("data.qiniu_buckets_objects.all", "key_infos.#", "3"),
 					resource.TestCheckResourceAttr("data.qiniu_buckets_objects.prefixed", "keys.#", "1"),
