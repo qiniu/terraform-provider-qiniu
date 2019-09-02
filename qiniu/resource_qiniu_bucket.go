@@ -177,7 +177,7 @@ func resourceDeleteQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 
 func resourceExistsQiniuBucket(d *schema.ResourceData, m interface{}) (bool, error) {
 	bucketManager := m.(*Client).BucketManager
-	bucketName := d.Get("name").(string)
+	bucketName := d.Id()
 	if _, err := bucketManager.GetBucketInfo(bucketName); err == nil {
 		return true, nil
 	} else if IsResourceNotFound(err) {
