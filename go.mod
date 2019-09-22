@@ -7,9 +7,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/onsi/ginkgo v1.7.0
 	github.com/onsi/gomega v1.4.3
-	github.com/qiniu/api.v7 v0.0.0
-	github.com/qiniu/x v7.0.8+incompatible // indirect
-	qiniupkg.com/x v7.0.8+incompatible // indirect
+	github.com/qiniu/api.v7 v0.0.0-20190520053455-bea02cd22bf4
 )
 
 replace github.com/qiniu/api.v7 => ./qiniu/sdk
