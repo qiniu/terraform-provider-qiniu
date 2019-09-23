@@ -3,7 +3,7 @@ module github.com/qiniu/terraform-provider-qiniu
 go 1.12
 
 require (
-	github.com/hashicorp/terraform v0.12.6
+	github.com/hashicorp/terraform v0.12.9
 	github.com/joho/godotenv v1.3.0
 	github.com/onsi/ginkgo v1.7.0
 	github.com/onsi/gomega v1.4.3
