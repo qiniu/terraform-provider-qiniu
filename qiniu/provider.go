@@ -73,6 +73,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"qiniu_buckets":         dataSourceQiniuBuckets(),
+			"qiniu_regions":         dataSourceQiniuRegions(),
 			"qiniu_buckets_objects": dataSourceQiniuBucketsObjects(),
 		},
 		ConfigureFunc: providerConfigure,

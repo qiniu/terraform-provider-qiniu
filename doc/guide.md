@@ -46,6 +46,10 @@ resource "qiniu_bucket_object" "basic_object" {
   source    = "/path/to/file"           # File Path to upload
 }
 
+# Qiniu Regions Data Source
+data "qiniu_regions" "all" {
+}
+
 # Qiniu Buckets Data Source
 data "qiniu_buckets" "z1" {
   name_regex = "^bucket-"
@@ -155,6 +159,15 @@ resource "qiniu_bucket" "basic_object" {
 ```
 
 ## 数据源
+
+### 列出区域
+
+列出所有七牛区域
+
+```hcl
+data "qiniu_regions" "all" {
+}
+```
 
 ### 列出 Bucket
 
