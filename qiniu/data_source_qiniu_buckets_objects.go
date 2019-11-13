@@ -2,7 +2,7 @@ package qiniu
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
-	qiniu_storage "github.com/qiniu/api.v7/storage"
+	qiniu_storage "github.com/qiniu/api.v7/v7/storage"
 )
 
 func dataSourceQiniuBucketsObjects() *schema.Resource {

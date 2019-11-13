@@ -9,13 +9,17 @@ import (
 var validBucketNameRegex *regexp.Regexp
 
 func init() {
-	validBucketNameRegex = regexp.MustCompile("^[a-zA-Z0-9\\-_]+$")
+	validBucketNameRegex = regexp.MustCompile("^[a-zA-Z0-9\\-]+$")
 }
 
 func validateBucketName(v interface{}, attributeName string) (warns []string, errs []error) {
 	bucketName := v.(string)
 	if len(bucketName) == 0 {
 		errs = append(errs, fmt.Errorf("%q must not be empty", attributeName))
+		return
+	}
+	if len(bucketName) < 3 {
+		errs = append(errs, fmt.Errorf("%q must not be shorter than 3 characters", attributeName))
 		return
 	}
 	if len(bucketName) > 63 {

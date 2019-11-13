@@ -3,9 +3,9 @@ package qiniu
 import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	qiniu_auth "github.com/qiniu/api.v7/auth"
-	qiniu_client "github.com/qiniu/api.v7/client"
-	qiniu_storage "github.com/qiniu/api.v7/storage"
+	qiniu_auth "github.com/qiniu/api.v7/v7/auth"
+	qiniu_client "github.com/qiniu/api.v7/v7/client"
+	qiniu_storage "github.com/qiniu/api.v7/v7/storage"
 )
 
 func init() {

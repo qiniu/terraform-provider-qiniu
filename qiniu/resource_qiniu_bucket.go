@@ -2,8 +2,8 @@ package qiniu
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
-	qiniu_client "github.com/qiniu/api.v7/client"
-	qiniu_storage "github.com/qiniu/api.v7/storage"
+	qiniu_client "github.com/qiniu/api.v7/v7/client"
+	qiniu_storage "github.com/qiniu/api.v7/v7/storage"
 )
 
 const (

@@ -65,6 +65,21 @@ resource "qiniu_bucket" "invalid_bucket" {
 		})
 	})
 
+	It("should reject too short qiniu bucket name", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket" "invalid_bucket" {
+    name = "ab"
+    region_id = "z2"
+}
+                `,
+				ExpectError: regexp.MustCompile("must not be shorter than 3 characters"),
+			}},
+		})
+	})
+
 	It("should reject too long qiniu bucket name", func() {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
@@ -86,7 +101,7 @@ resource "qiniu_bucket" "invalid_bucket" {
 			Steps: []resource.TestStep{{
 				Config: `
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid_name"
+    name = "valid-name"
     region_id = "z100"
 }
                 `,
@@ -101,7 +116,7 @@ resource "qiniu_bucket" "invalid_bucket" {
 			Steps: []resource.TestStep{{
 				Config: `
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid_name"
+    name = "valid-name"
     region_id = "z1"
     image_url = "www.qiniu.com"
 }
@@ -117,7 +132,7 @@ resource "qiniu_bucket" "invalid_bucket" {
 			Steps: []resource.TestStep{{
 				Config: `
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid_name"
+    name = "valid-name"
     region_id = "z1"
     image_url = "http://www.qiniu.com"
     image_host = "http://www.qiniu.com"

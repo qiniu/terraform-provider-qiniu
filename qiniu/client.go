@@ -1,8 +1,8 @@
 package qiniu
 
 import (
-	qiniu_auth "github.com/qiniu/api.v7/auth"
-	qiniu_storage "github.com/qiniu/api.v7/storage"
+	qiniu_auth "github.com/qiniu/api.v7/v7/auth"
+	qiniu_storage "github.com/qiniu/api.v7/v7/storage"
 )
 
 type Client struct {

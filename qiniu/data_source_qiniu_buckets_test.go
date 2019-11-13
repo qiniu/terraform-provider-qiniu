@@ -1,7 +1,9 @@
 package qiniu_test
 
 import (
+	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	. "github.com/onsi/ginkgo"
@@ -14,25 +16,25 @@ var _ = Describe("dataSourceQiniuBuckets", func() {
 			Providers:    providers,
 			CheckDestroy: testCheckQiniuResourceDestroy,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "basic_bucket_1" {
-    name = "basic-test-terraform-1"
+    name = "basic-test-terraform-1-%d"
     region_id = "z2"
     private = true
 }
 
 resource "qiniu_bucket" "basic_bucket_2" {
-    name = "basic-test-terraform-2"
+    name = "basic-test-terraform-2-%d"
     region_id = "z1"
     private = false
 }
 
 resource "qiniu_bucket" "basic_bucket_3" {
-    name = "basic-test-terraform-3"
+    name = "basic-test-terraform-3-%d"
     region_id = "as0"
     private = true
 }
-                `,
+                `, time.Now().UnixNano(), time.Now().UnixNano(), time.Now().UnixNano()),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket_1"),
 					testCheckQiniuBucketItemExists("qiniu_bucket.basic_bucket_2"),
