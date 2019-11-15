@@ -21,6 +21,16 @@ resource "qiniu_bucket" "basic_bucket" {
     name = "basic-test-terraform"
     region_id = "z2"
     private = true
+    lifecycle_rules {
+        name = "rule_for_user_files"
+        prefix = "users/"
+        to_line_after_days = 30
+    }
+    lifecycle_rules {
+        name = "rule_for_sys_files"
+        prefix = "sys/"
+        delete_after_days = 10
+    }
 }
                 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -30,6 +40,7 @@ resource "qiniu_bucket" "basic_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "private", "true"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
+					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "2"),
 				),
 			}},
 		})
@@ -143,6 +154,24 @@ resource "qiniu_bucket" "invalid_bucket" {
 		})
 	})
 
+	It("should reject invalid bucket lifecycle rule name", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket" "invalid_bucket" {
+    name = "valid-name"
+    region_id = "z1"
+    lifecycle_rules {
+        name = "superlongsuperlongsuperlongsuperlongsuperlongsuperlong"
+    }
+}
+                `,
+				ExpectError: regexp.MustCompile("must not be longer than and equal to 50 characters"),
+			}},
+		})
+	})
+
 	It("should update qiniu bucket", func() {
 		resourceID := "qiniu_bucket.update_bucket"
 		resource.Test(MakeT("TestUpdateQiniuBucket"), resource.TestCase{
@@ -231,6 +260,60 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "private", "true"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    lifecycle_rules {
+        name = "rule_for_user_files"
+        prefix = "users/"
+        to_line_after_days = 30
+    }
+    lifecycle_rules {
+        name = "rule_for_sys_files"
+        prefix = "sys/"
+        delete_after_days = 10
+    }
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "2"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    lifecycle_rules {
+        name = "rule_for_admin_files"
+        prefix = "admins/"
+        delete_after_days = 20
+    }
+    lifecycle_rules {
+        name = "rule_for_sys_files"
+        prefix = "sys/"
+        to_line_after_days = 50
+    }
+    lifecycle_rules {
+        name = "rule_for_guest_files"
+        prefix = "guests/"
+        delete_after_days = 30
+        to_line_after_days = 10
+    }
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "3"),
 				),
 			}},
 		})

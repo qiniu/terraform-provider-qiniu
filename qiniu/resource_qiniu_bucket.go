@@ -45,6 +45,37 @@ func resourceQiniuBucket() *schema.Resource {
 				Description:  "Image Source Host",
 				ValidateFunc: validateHost,
 			},
+			"lifecycle_rules": {
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Bucket Lifecycle Rules",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "Rule name",
+							ForceNew:     true,
+							ValidateFunc: validateLifecycleRuleName,
+						},
+						"prefix": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Rule for object name prefix",
+						},
+						"to_line_after_days": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "To line after days",
+						},
+						"delete_after_days": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Delete after days",
+						},
+					},
+				},
+			},
 		},
 		Create: resourceCreateQiniuBucket,
 		Read:   resourceReadQiniuBucket,
@@ -88,16 +119,45 @@ func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 			}
 		}
 	}
+	if v, ok = d.GetOk("lifecycle_rules"); ok {
+		set := v.(*schema.Set)
+		for _, r := range set.List() {
+			var lifeCycleRule qiniu_storage.BucketLifeCycleRule
+
+			rule := r.(map[string]interface{})
+			if v, ok = rule["name"]; ok {
+				lifeCycleRule.Name = v.(string)
+			}
+			if v, ok = rule["prefix"]; ok {
+				lifeCycleRule.Prefix = v.(string)
+			}
+			if v, ok = rule["delete_after_days"]; ok {
+				lifeCycleRule.DeleteAfterDays = v.(int)
+			}
+			if v, ok = rule["to_line_after_days"]; ok {
+				lifeCycleRule.ToLineAfterDays = v.(int)
+			}
+			if err = bucketManager.AddBucketLifeCycleRule(bucketName, &lifeCycleRule); err != nil {
+				return
+			}
+		}
+	}
 	d.SetId(bucketName)
 	return resourceReadQiniuBucket(d, m)
 }
 
 func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) {
-	var bucketInfo qiniu_storage.BucketInfo
+	var (
+		bucketInfo     qiniu_storage.BucketInfo
+		lifeCycleRules []qiniu_storage.BucketLifeCycleRule
+	)
 
 	bucketManager := m.(*Client).BucketManager
 	bucketName := d.Id()
 	bucketInfo, err = bucketManager.GetBucketInfo(bucketName)
+	if err == nil {
+		lifeCycleRules, err = bucketManager.GetBucketLifeCycleRule(bucketName)
+	}
 
 	if err != nil {
 		if IsResourceNotFound(err) {
@@ -112,6 +172,7 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	d.Set("private", bucketInfo.IsPrivate())
 	d.Set("image_url", bucketInfo.Source)
 	d.Set("image_host", bucketInfo.Host)
+	d.Set("lifecycle_rules", lifeCycleRules)
 	return nil
 }
 
@@ -123,8 +184,12 @@ func resourceUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 }
 
 func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (err error) {
-	bucketManager := m.(*Client).BucketManager
-	bucketName := d.Id()
+	var (
+		bucketManager = m.(*Client).BucketManager
+		bucketName    = d.Id()
+		v             interface{}
+		ok            bool
+	)
 
 	d.Partial(true)
 	defer d.Partial(false)
@@ -145,7 +210,7 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 		if err = bucketManager.UnsetImage(bucketName); err != nil {
 			return
 		}
-		if v, ok := d.GetOk("image_url"); ok {
+		if v, ok = d.GetOk("image_url"); ok {
 			imageURL := v.(string)
 			if v, ok = d.GetOk("image_host"); ok {
 				imageHost := v.(string)
@@ -155,6 +220,63 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 			} else {
 				if err = bucketManager.SetImage(imageURL, bucketName); err != nil {
 					return
+				}
+			}
+		}
+	}
+	if d.HasChange("lifecycle_rules") {
+		var (
+			ruleName                 string
+			newRule                  qiniu_storage.BucketLifeCycleRule
+			oldRulesList             []qiniu_storage.BucketLifeCycleRule
+			oldRulesMap, newRulesMap map[string]qiniu_storage.BucketLifeCycleRule
+		)
+		if oldRulesList, err = bucketManager.GetBucketLifeCycleRule(bucketName); err != nil {
+			return
+		} else {
+			oldRulesMap = make(map[string]qiniu_storage.BucketLifeCycleRule, len(oldRulesList))
+			for i := range oldRulesList {
+				oldRulesMap[oldRulesList[i].Name] = oldRulesList[i]
+			}
+		}
+		if v, ok = d.GetOk("lifecycle_rules"); ok {
+			set := v.(*schema.Set)
+			newRulesMap = make(map[string]qiniu_storage.BucketLifeCycleRule, set.Len())
+
+			for _, r := range set.List() {
+				var newRule qiniu_storage.BucketLifeCycleRule
+
+				rule := r.(map[string]interface{})
+				if v, ok = rule["name"]; ok {
+					newRule.Name = v.(string)
+				}
+				if v, ok = rule["prefix"]; ok {
+					newRule.Prefix = v.(string)
+				}
+				if v, ok = rule["delete_after_days"]; ok {
+					newRule.DeleteAfterDays = v.(int)
+				}
+				if v, ok = rule["to_line_after_days"]; ok {
+					newRule.ToLineAfterDays = v.(int)
+				}
+				newRulesMap[newRule.Name] = newRule
+			}
+		}
+		for ruleName, _ = range oldRulesMap {
+			if newRule, ok = newRulesMap[ruleName]; ok {
+				if err = bucketManager.UpdateBucketLifeCycleRule(bucketName, &newRule); err != nil {
+					return err
+				}
+			} else {
+				if err = bucketManager.DelBucketLifeCycleRule(bucketName, ruleName); err != nil {
+					return err
+				}
+			}
+		}
+		for ruleName, newRule = range newRulesMap {
+			if _, ok = oldRulesMap[ruleName]; ok {
+				if err = bucketManager.AddBucketLifeCycleRule(bucketName, &newRule); err != nil {
+					return err
 				}
 			}
 		}

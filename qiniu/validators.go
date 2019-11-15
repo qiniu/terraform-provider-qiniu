@@ -6,10 +6,14 @@ import (
 	"regexp"
 )
 
-var validBucketNameRegex *regexp.Regexp
+var (
+	validBucketNameRegex *regexp.Regexp
+	validRuleNameRegex   *regexp.Regexp
+)
 
 func init() {
 	validBucketNameRegex = regexp.MustCompile("^[a-zA-Z0-9\\-]+$")
+	validRuleNameRegex = regexp.MustCompile("^[a-zA-Z0-9\\_]+$")
 }
 
 func validateBucketName(v interface{}, attributeName string) (warns []string, errs []error) {
@@ -72,6 +76,23 @@ func validateHost(v interface{}, attributeName string) (warns []string, errs []e
 	}
 	if !regexp.MustCompile(r).MatchString(hostString) {
 		errs = append(errs, fmt.Errorf("%q must be valid host", attributeName))
+	}
+	return
+}
+
+func validateLifecycleRuleName(v interface{}, attributeName string) (warns []string, errs []error) {
+	ruleName := v.(string)
+	if len(ruleName) == 0 {
+		errs = append(errs, fmt.Errorf("%q must not be empty", attributeName))
+		return
+	}
+	if len(ruleName) >= 50 {
+		errs = append(errs, fmt.Errorf("%q must not be longer than and equal to 50 characters", attributeName))
+		return
+	}
+	if !validRuleNameRegex.MatchString(ruleName) {
+		errs = append(errs, fmt.Errorf("%q must not contain invalid characters", attributeName))
+		return
 	}
 	return
 }
