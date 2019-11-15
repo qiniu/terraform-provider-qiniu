@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -93,6 +94,18 @@ func validateLifecycleRuleName(v interface{}, attributeName string) (warns []str
 	if !validRuleNameRegex.MatchString(ruleName) {
 		errs = append(errs, fmt.Errorf("%q must not contain invalid characters", attributeName))
 		return
+	}
+	return
+}
+
+func validateAntiLeechMode(v interface{}, attributeName string) (warns []string, errs []error) {
+	modeName := v.(string)
+	switch strings.ToLower(modeName) {
+	case "":
+	case "whitelist":
+	case "blacklist":
+	default:
+		errs = append(errs, fmt.Errorf("%q contains invalid mode", attributeName))
 	}
 	return
 }

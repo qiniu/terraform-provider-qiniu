@@ -1,6 +1,9 @@
 package qiniu
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	qiniu_client "github.com/qiniu/api.v7/v7/client"
 	qiniu_storage "github.com/qiniu/api.v7/v7/storage"
@@ -76,6 +79,27 @@ func resourceQiniuBucket() *schema.Resource {
 					},
 				},
 			},
+			"anti_leech_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  "Anti leech mode",
+				ValidateFunc: validateAntiLeechMode,
+			},
+			"allow_empty_referer": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Allow empty referer",
+			},
+			"referer_pattern": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Referer pattern",
+			},
+			"only_enable_anti_leech_for_cdn": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Only enable anti leech mode for CDN",
+			},
 		},
 		Create: resourceCreateQiniuBucket,
 		Read:   resourceReadQiniuBucket,
@@ -90,8 +114,9 @@ func resourceQiniuBucket() *schema.Resource {
 
 func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error) {
 	var (
-		v  interface{}
-		ok bool
+		referAntiLeechConfig qiniu_storage.ReferAntiLeechConfig
+		v                    interface{}
+		ok                   bool
 	)
 	bucketManager := m.(*Client).BucketManager
 	bucketName := d.Get("name").(string)
@@ -142,6 +167,33 @@ func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 			}
 		}
 	}
+	if v, ok = d.GetOk("anti_leech_mode"); ok {
+		switch v.(string) {
+		case "":
+			referAntiLeechConfig.Mode = 0
+		case "whitelist":
+			referAntiLeechConfig.Mode = 1
+		case "blacklist":
+			referAntiLeechConfig.Mode = 2
+		default:
+			err = errors.New("\"anti_leech_mode\" contains invalid mode")
+			return
+		}
+	}
+	if referAntiLeechConfig.Mode > 0 {
+		if v, ok = d.GetOk("allow_empty_referer"); ok {
+			referAntiLeechConfig.AllowEmptyReferer = v.(bool)
+		}
+		if v, ok = d.GetOk("referer_pattern"); ok {
+			referAntiLeechConfig.Pattern = v.(string)
+		}
+		if v, ok = d.GetOk("only_enable_anti_leech_for_cdn"); ok {
+			referAntiLeechConfig.EnableSource = !v.(bool)
+		}
+		if err = bucketManager.SetReferAntiLeechMode(bucketName, &referAntiLeechConfig); err != nil {
+			return
+		}
+	}
 	d.SetId(bucketName)
 	return resourceReadQiniuBucket(d, m)
 }
@@ -173,6 +225,27 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	d.Set("image_url", bucketInfo.Source)
 	d.Set("image_host", bucketInfo.Host)
 	d.Set("lifecycle_rules", lifeCycleRules)
+
+	switch bucketInfo.AntiLeechMode {
+	case 0:
+		d.Set("anti_leech_mode", "")
+		d.Set("referer_pattern", "")
+		d.Set("allow_empty_referer", "")
+		d.Set("only_enable_anti_leech_for_cdn", "")
+	case 1:
+		d.Set("anti_leech_mode", "whitelist")
+		d.Set("referer_pattern", strings.Join(bucketInfo.ReferWl, ";"))
+		d.Set("allow_empty_referer", bucketInfo.NoRefer)
+		d.Set("only_enable_anti_leech_for_cdn", !bucketInfo.EnableSource)
+	case 2:
+		d.Set("anti_leech_mode", "blacklist")
+		d.Set("referer_pattern", strings.Join(bucketInfo.ReferBl, ";"))
+		d.Set("allow_empty_referer", bucketInfo.NoRefer)
+		d.Set("only_enable_anti_leech_for_cdn", !bucketInfo.EnableSource)
+	default:
+		err = errors.New("\"anti_leech_mode\" returns server contains invalid mode")
+		return
+	}
 	return nil
 }
 
@@ -190,9 +263,6 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 		v             interface{}
 		ok            bool
 	)
-
-	d.Partial(true)
-	defer d.Partial(false)
 
 	if d.HasChange("private") {
 		if d.Get("private").(bool) {
@@ -281,6 +351,36 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 			}
 		}
 	}
+
+	if d.HasChange("anti_leech_mode") || d.HasChange("referer_pattern") || d.HasChange("allow_empty_referer") || d.HasChange("only_enable_anti_leech_for_cdn") {
+		var referAntiLeechConfig qiniu_storage.ReferAntiLeechConfig
+		if v, ok = d.GetOk("anti_leech_mode"); ok {
+			switch v.(string) {
+			case "":
+				referAntiLeechConfig.Mode = 0
+			case "whitelist":
+				referAntiLeechConfig.Mode = 1
+			case "blacklist":
+				referAntiLeechConfig.Mode = 2
+			default:
+				err = errors.New("\"anti_leech_mode\" contains invalid mode")
+				return
+			}
+		}
+		if v, ok = d.GetOk("allow_empty_referer"); ok {
+			referAntiLeechConfig.AllowEmptyReferer = v.(bool)
+		}
+		if v, ok = d.GetOk("referer_pattern"); ok {
+			referAntiLeechConfig.Pattern = v.(string)
+		}
+		if v, ok = d.GetOk("only_enable_anti_leech_for_cdn"); ok {
+			referAntiLeechConfig.EnableSource = !v.(bool)
+		}
+		if err = bucketManager.SetReferAntiLeechMode(bucketName, &referAntiLeechConfig); err != nil {
+			return
+		}
+	}
+
 	return nil
 }
 

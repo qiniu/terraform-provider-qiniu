@@ -31,6 +31,10 @@ resource "qiniu_bucket" "basic_bucket" {
         prefix = "sys/"
         delete_after_days = 10
     }
+    anti_leech_mode = "whitelist"
+    referer_pattern = "*.qiniu.com;*.qiniudn.com"
+    allow_empty_referer = true
+    only_enable_anti_leech_for_cdn = true
 }
                 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -41,6 +45,10 @@ resource "qiniu_bucket" "basic_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "2"),
+					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", "whitelist"),
+					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
+					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "true"),
+					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "true"),
 				),
 			}},
 		})
@@ -168,6 +176,22 @@ resource "qiniu_bucket" "invalid_bucket" {
 }
                 `,
 				ExpectError: regexp.MustCompile("must not be longer than and equal to 50 characters"),
+			}},
+		})
+	})
+
+	It("should reject invalid bucket anti leech mode", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket" "invalid_bucket" {
+    name = "valid-name"
+    region_id = "z1"
+    anti_leech_mode = "invalid"
+}
+                `,
+				ExpectError: regexp.MustCompile("\"anti_leech_mode\" contains invalid mode"),
 			}},
 		})
 	})
@@ -314,6 +338,46 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "3"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    anti_leech_mode = "whitelist"
+    referer_pattern = "*.qiniu.com;*.qiniudn.com"
+    allow_empty_referer = true
+    only_enable_anti_leech_for_cdn = true
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "0"),
+					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", "whitelist"),
+					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
+					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "true"),
+					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "true"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "0"),
+					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", ""),
+					resource.TestCheckResourceAttr(resourceID, "referer_pattern", ""),
+					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "false"),
+					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "false"),
 				),
 			}},
 		})
