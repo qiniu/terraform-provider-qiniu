@@ -154,6 +154,11 @@ func resourceQiniuBucket() *schema.Resource {
 				Optional:    true,
 				Description: "Only enable anti leech mode for CDN",
 			},
+			"max_age": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "The maximum amount of time a resource will be considered fresh",
+			},
 		},
 		Create: resourceCreateQiniuBucket,
 		Read:   resourceReadQiniuBucket,
@@ -297,6 +302,12 @@ func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 			return
 		}
 	}
+	if v, ok = d.GetOk("max_age"); ok {
+		maxAge := int64(v.(int))
+		if err = bucketManager.SetBucketMaxAge(bucketName, maxAge); err != nil {
+			return
+		}
+	}
 
 	d.SetId(bucketName)
 	return resourceReadQiniuBucket(d, m)
@@ -327,11 +338,13 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 			return err
 		}
 	}
+
 	d.Set("name", bucketName)
 	d.Set("region_id", bucketInfo.Region)
 	d.Set("private", bucketInfo.IsPrivate())
 	d.Set("image_url", bucketInfo.Source)
 	d.Set("image_host", bucketInfo.Host)
+	d.Set("max_age", bucketInfo.MaxAge)
 	d.Set("index_page_on", bucketInfo.IndexPageOn())
 	d.Set("lifecycle_rules", lifeCycleRules)
 	d.Set("cors_rules", corsRules)
@@ -375,7 +388,7 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 	)
 
 	if d.HasChange("private") {
-		if d.Get("private").(bool) {
+		if v, ok = d.GetOk("private"); ok && v.(bool) {
 			err = bucketManager.MakeBucketPrivate(bucketName)
 		} else {
 			err = bucketManager.MakeBucketPublic(bucketName)
@@ -409,6 +422,15 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 			err = bucketManager.TurnOffIndexPage(bucketName)
 		}
 		if err != nil {
+			return
+		}
+	}
+	if d.HasChange("max_age") {
+		var maxAge int64 = 0
+		if v, ok = d.GetOk("max_age"); ok {
+			maxAge = int64(v.(int))
+		}
+		if err = bucketManager.SetBucketMaxAge(bucketName, maxAge); err != nil {
 			return
 		}
 	}
@@ -453,18 +475,18 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 		for ruleName, _ = range oldRulesMap {
 			if newRule, ok = newRulesMap[ruleName]; ok {
 				if err = bucketManager.UpdateBucketLifeCycleRule(bucketName, &newRule); err != nil {
-					return err
+					return
 				}
 			} else {
 				if err = bucketManager.DelBucketLifeCycleRule(bucketName, ruleName); err != nil {
-					return err
+					return
 				}
 			}
 		}
 		for ruleName, newRule = range newRulesMap {
 			if _, ok = oldRulesMap[ruleName]; ok {
 				if err = bucketManager.AddBucketLifeCycleRule(bucketName, &newRule); err != nil {
-					return err
+					return
 				}
 			}
 		}

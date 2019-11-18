@@ -40,6 +40,7 @@ resource "qiniu_bucket" "basic_bucket" {
     referer_pattern = "*.qiniu.com;*.qiniudn.com"
     allow_empty_referer = true
     only_enable_anti_leech_for_cdn = false
+    max_age = 86400
 }
                 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -56,6 +57,7 @@ resource "qiniu_bucket" "basic_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
 					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "true"),
 					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "false"),
+					resource.TestCheckResourceAttr(resourceID, "max_age", "86400"),
 				),
 			}},
 		})
@@ -314,6 +316,43 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
 					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "max_age", "0"),
+					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
+					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    max_age = "86400"
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "max_age", "86400"),
+					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
+					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    max_age = "172800"
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "max_age", "172800"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 				),
@@ -332,6 +371,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
 					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "max_age", "0"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", "http://www.qiniu.com"),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 				),
