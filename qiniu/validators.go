@@ -109,3 +109,21 @@ func validateAntiLeechMode(v interface{}, attributeName string) (warns []string,
 	}
 	return
 }
+
+func validateHTTPMethods(v interface{}, attributeName string) (warns []string, errs []error) {
+	methodName := v.(string)
+	switch strings.ToLower(methodName) {
+	case "get":
+	case "head":
+	case "post":
+	case "put":
+	case "delete":
+	case "patch":
+	case "options":
+	case "connect":
+	case "trace":
+	default:
+		errs = append(errs, fmt.Errorf("%q is an invalid http method", attributeName))
+	}
+	return
+}

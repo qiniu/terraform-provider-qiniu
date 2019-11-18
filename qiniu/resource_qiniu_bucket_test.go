@@ -31,6 +31,10 @@ resource "qiniu_bucket" "basic_bucket" {
         prefix = "sys/"
         delete_after_days = 10
     }
+    cors_rules {
+        allowed_origins = ["http://www.qiniu.com"]
+        allowed_methods = ["GET", "POST"]
+    }
     anti_leech_mode = "whitelist"
     referer_pattern = "*.qiniu.com;*.qiniudn.com"
     allow_empty_referer = true
@@ -45,6 +49,7 @@ resource "qiniu_bucket" "basic_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "2"),
+					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "1"),
 					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", "whitelist"),
 					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
 					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "true"),
@@ -192,6 +197,80 @@ resource "qiniu_bucket" "invalid_bucket" {
 }
                 `,
 				ExpectError: regexp.MustCompile("\"anti_leech_mode\" contains invalid mode"),
+			}},
+		})
+	})
+
+	It("should reject invalid cors rule without allowed origins", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket" "invalid_bucket" {
+    name = "valid-name"
+    region_id = "z1"
+    cors_rules {
+        allowed_methods = ["GET"]
+    }
+}
+                `,
+				ExpectError: regexp.MustCompile("The argument \"allowed_origins\" is required, but no definition was found."),
+			}},
+		})
+	})
+
+	It("should reject invalid cors rule without allowed methods", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket" "invalid_bucket" {
+    name = "valid-name"
+    region_id = "z1"
+    cors_rules {
+        allowed_origins = ["http://abc.com"]
+    }
+}
+                `,
+				ExpectError: regexp.MustCompile("The argument \"allowed_methods\" is required, but no definition was found."),
+			}},
+		})
+	})
+
+	It("should reject invalid cors rule with empty allowed origins", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket" "invalid_bucket" {
+    name = "valid-name"
+    region_id = "z1"
+    cors_rules {
+        allowed_origins = []
+        allowed_methods = ["GET"]
+    }
+}
+                `,
+				ExpectError: regexp.MustCompile("invalid argument"),
+			}},
+		})
+	})
+
+	It("should reject invalid cors rule with invalid method", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket" "invalid_bucket" {
+    name = "valid-name"
+    region_id = "z1"
+    cors_rules {
+        allowed_origins = ["http://abc.com"]
+        allowed_methods = ["OPEN"]
+    }
+}
+                `,
+				ExpectError: regexp.MustCompile("invalid http method"),
 			}},
 		})
 	})
@@ -378,6 +457,63 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "referer_pattern", ""),
 					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "false"),
 					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "false"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    cors_rules {
+        allowed_origins = ["http://*.abc.com", "http://*.def.com"]
+        allowed_methods = ["GET"]
+        allowed_headers = ["Content-Type"]
+    }
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "1"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    cors_rules {
+        allowed_origins = ["http://*.abc.com"]
+        allowed_methods = ["GET"]
+        allowed_headers = ["Content-Type"]
+    }
+    cors_rules {
+        allowed_origins = ["http://*.def.com"]
+        allowed_methods = ["POST"]
+        allowed_headers = ["Content-Type", "Content-Encoding"]
+    }
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "2"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "0"),
 				),
 			}},
 		})

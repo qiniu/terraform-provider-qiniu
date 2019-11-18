@@ -79,6 +79,55 @@ func resourceQiniuBucket() *schema.Resource {
 					},
 				},
 			},
+			"cors_rules": {
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Bucket CORS Rules",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"allowed_origins": {
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "Allowed original domains",
+							ForceNew:    true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"allowed_methods": {
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "Allowed HTTP methods",
+							ForceNew:    true,
+							Elem: &schema.Schema{
+								Type:         schema.TypeString,
+								ValidateFunc: validateHTTPMethods,
+							},
+						},
+						"allowed_headers": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: "Allowed HTTP headers",
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"exposed_headers": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: "Exposed HTTP headers",
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"max_age": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "The maximum amount of time a resource will be considered fresh",
+						},
+					},
+				},
+			},
 			"anti_leech_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -167,6 +216,44 @@ func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 			}
 		}
 	}
+	if v, ok = d.GetOk("cors_rules"); ok {
+		set := v.(*schema.Set)
+		corsRules := make([]qiniu_storage.CorsRule, 0, set.Len())
+		for _, r := range set.List() {
+			var (
+				ele      interface{}
+				corsRule qiniu_storage.CorsRule
+				rule     = r.(map[string]interface{})
+			)
+			if v, ok = rule["allowed_origins"]; ok {
+				for _, ele = range v.([]interface{}) {
+					corsRule.AllowedOrigin = append(corsRule.AllowedOrigin, ele.(string))
+				}
+			}
+			if v, ok = rule["allowed_methods"]; ok {
+				for _, ele = range v.([]interface{}) {
+					corsRule.AllowedMethod = append(corsRule.AllowedMethod, ele.(string))
+				}
+			}
+			if v, ok = rule["allowed_headers"]; ok {
+				for _, ele = range v.([]interface{}) {
+					corsRule.AllowedHeader = append(corsRule.AllowedHeader, ele.(string))
+				}
+			}
+			if v, ok = rule["exposed_headers"]; ok {
+				for _, ele = range v.([]interface{}) {
+					corsRule.ExposedHeader = append(corsRule.ExposedHeader, ele.(string))
+				}
+			}
+			if v, ok = rule["max_age"]; ok {
+				corsRule.MaxAge = int64(v.(int))
+			}
+			corsRules = append(corsRules, corsRule)
+		}
+		if err = bucketManager.AddCorsRules(bucketName, corsRules); err != nil {
+			return
+		}
+	}
 	if v, ok = d.GetOk("anti_leech_mode"); ok {
 		switch v.(string) {
 		case "":
@@ -202,6 +289,7 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	var (
 		bucketInfo     qiniu_storage.BucketInfo
 		lifeCycleRules []qiniu_storage.BucketLifeCycleRule
+		corsRules      []qiniu_storage.CorsRule
 	)
 
 	bucketManager := m.(*Client).BucketManager
@@ -209,6 +297,9 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	bucketInfo, err = bucketManager.GetBucketInfo(bucketName)
 	if err == nil {
 		lifeCycleRules, err = bucketManager.GetBucketLifeCycleRule(bucketName)
+	}
+	if err == nil {
+		corsRules, err = bucketManager.GetCorsRules(bucketName)
 	}
 
 	if err != nil {
@@ -225,6 +316,7 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	d.Set("image_url", bucketInfo.Source)
 	d.Set("image_host", bucketInfo.Host)
 	d.Set("lifecycle_rules", lifeCycleRules)
+	d.Set("cors_rules", corsRules)
 
 	switch bucketInfo.AntiLeechMode {
 	case 0:
@@ -348,6 +440,47 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 				if err = bucketManager.AddBucketLifeCycleRule(bucketName, &newRule); err != nil {
 					return err
 				}
+			}
+		}
+	}
+
+	if d.HasChange("cors_rules") {
+		if v, ok = d.GetOk("cors_rules"); ok {
+			set := v.(*schema.Set)
+			corsRules := make([]qiniu_storage.CorsRule, 0, set.Len())
+			for _, r := range set.List() {
+				var (
+					corsRule qiniu_storage.CorsRule
+					ele      interface{}
+					rule     = r.(map[string]interface{})
+				)
+				if v, ok = rule["allowed_origins"]; ok {
+					for ele = range v.([]interface{}) {
+						corsRule.AllowedOrigin = append(corsRule.AllowedOrigin, ele.(string))
+					}
+				}
+				if v, ok = rule["allowed_methods"]; ok {
+					for ele = range v.([]interface{}) {
+						corsRule.AllowedMethod = append(corsRule.AllowedMethod, ele.(string))
+					}
+				}
+				if v, ok = rule["allowed_headers"]; ok {
+					for ele = range v.([]interface{}) {
+						corsRule.AllowedHeader = append(corsRule.AllowedHeader, ele.(string))
+					}
+				}
+				if v, ok = rule["exposed_headers"]; ok {
+					for ele = range v.([]interface{}) {
+						corsRule.ExposedHeader = append(corsRule.ExposedHeader, ele.(string))
+					}
+				}
+				if v, ok = rule["max_age"]; ok {
+					corsRule.MaxAge = v.(int64)
+				}
+				corsRules = append(corsRules, corsRule)
+			}
+			if err = bucketManager.AddCorsRules(bucketName, corsRules); err != nil {
+				return
 			}
 		}
 	}
