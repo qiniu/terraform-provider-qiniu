@@ -39,7 +39,7 @@ resource "qiniu_bucket" "basic_bucket" {
     anti_leech_mode = "whitelist"
     referer_pattern = "*.qiniu.com;*.qiniudn.com"
     allow_empty_referer = true
-    only_enable_anti_leech_for_cdn = true
+    only_enable_anti_leech_for_cdn = false
 }
                 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -55,7 +55,7 @@ resource "qiniu_bucket" "basic_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", "whitelist"),
 					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
 					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "true"),
-					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "true"),
+					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "false"),
 				),
 			}},
 		})
@@ -466,6 +466,29 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
 					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "true"),
 					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "true"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    anti_leech_mode = "blacklist"
+    referer_pattern = "*.qiniu.com;*.qiniudn.com"
+    allow_empty_referer = false
+    only_enable_anti_leech_for_cdn = false
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "0"),
+					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", "blacklist"),
+					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
+					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "false"),
+					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "false"),
 				),
 			}, {
 				Config: `

@@ -281,26 +281,23 @@ func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 		}
 		if v, ok = d.GetOk("only_enable_anti_leech_for_cdn"); ok {
 			referAntiLeechConfig.EnableSource = !v.(bool)
+		} else {
+			referAntiLeechConfig.EnableSource = true
 		}
 		if err = bucketManager.SetReferAntiLeechMode(bucketName, &referAntiLeechConfig); err != nil {
 			return
 		}
 	}
-	if v, ok = d.GetOk("index_page_on"); ok {
-		if v.(bool) {
-			if err = bucketManager.TurnOnIndexPage(bucketName); err != nil {
-				return
-			}
-		} else {
-			if err = bucketManager.TurnOffIndexPage(bucketName); err != nil {
-				return
-			}
+	if v, ok = d.GetOk("index_page_on"); ok && v.(bool) {
+		if err = bucketManager.TurnOnIndexPage(bucketName); err != nil {
+			return
 		}
 	} else {
 		if err = bucketManager.TurnOffIndexPage(bucketName); err != nil {
 			return
 		}
 	}
+
 	d.SetId(bucketName)
 	return resourceReadQiniuBucket(d, m)
 }
@@ -406,19 +403,13 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 		}
 	}
 	if d.HasChange("index_page_on") {
-		if v, ok = d.GetOk("index_page_on"); ok {
-			if v.(bool) {
-				err = bucketManager.TurnOnIndexPage(bucketName)
-			} else {
-				err = bucketManager.TurnOffIndexPage(bucketName)
-			}
-			if err != nil {
-				return
-			}
+		if v, ok = d.GetOk("index_page_on"); ok && v.(bool) {
+			err = bucketManager.TurnOnIndexPage(bucketName)
 		} else {
-			if err = bucketManager.TurnOffIndexPage(bucketName); err != nil {
-				return
-			}
+			err = bucketManager.TurnOffIndexPage(bucketName)
+		}
+		if err != nil {
+			return
 		}
 	}
 	if d.HasChange("lifecycle_rules") {
@@ -543,6 +534,8 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 		}
 		if v, ok = d.GetOk("only_enable_anti_leech_for_cdn"); ok {
 			referAntiLeechConfig.EnableSource = !v.(bool)
+		} else {
+			referAntiLeechConfig.EnableSource = true
 		}
 		if err = bucketManager.SetReferAntiLeechMode(bucketName, &referAntiLeechConfig); err != nil {
 			return
