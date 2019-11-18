@@ -21,6 +21,7 @@ resource "qiniu_bucket" "basic_bucket" {
     name = "basic-test-terraform"
     region_id = "z2"
     private = true
+    index_page_on = false
     lifecycle_rules {
         name = "rule_for_user_files"
         prefix = "users/"
@@ -46,6 +47,7 @@ resource "qiniu_bucket" "basic_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "basic-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "true"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "2"),
@@ -294,6 +296,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 				),
@@ -310,6 +313,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 				),
@@ -327,6 +331,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", "http://www.qiniu.com"),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 				),
@@ -345,6 +350,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", "http://portal.qiniu.io"),
 					resource.TestCheckResourceAttr(resourceID, "image_host", "www.qiniu.com"),
 				),
@@ -361,6 +367,24 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "true"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
+					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    index_page_on = true
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "true"),
 					resource.TestCheckResourceAttr(resourceID, "image_url", ""),
 					resource.TestCheckResourceAttr(resourceID, "image_host", ""),
 				),
@@ -386,6 +410,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "2"),
 				),
 			}, {
@@ -416,6 +441,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "3"),
 				),
 			}, {
@@ -434,6 +460,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "0"),
 					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", "whitelist"),
 					resource.TestCheckResourceAttr(resourceID, "referer_pattern", "*.qiniu.com;*.qiniudn.com"),
@@ -452,6 +479,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "lifecycle_rules.#", "0"),
 					resource.TestCheckResourceAttr(resourceID, "anti_leech_mode", ""),
 					resource.TestCheckResourceAttr(resourceID, "referer_pattern", ""),
@@ -475,6 +503,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "1"),
 				),
 			}, {
@@ -499,6 +528,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "2"),
 				),
 			}, {
@@ -513,6 +543,7 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
 					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "0"),
 				),
 			}},

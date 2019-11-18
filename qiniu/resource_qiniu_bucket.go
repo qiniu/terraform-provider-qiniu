@@ -48,6 +48,11 @@ func resourceQiniuBucket() *schema.Resource {
 				Description:  "Image Source Host",
 				ValidateFunc: validateHost,
 			},
+			"index_page_on": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Turn on index page of the bucket",
+			},
 			"lifecycle_rules": {
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -281,6 +286,21 @@ func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 			return
 		}
 	}
+	if v, ok = d.GetOk("index_page_on"); ok {
+		if v.(bool) {
+			if err = bucketManager.TurnOnIndexPage(bucketName); err != nil {
+				return
+			}
+		} else {
+			if err = bucketManager.TurnOffIndexPage(bucketName); err != nil {
+				return
+			}
+		}
+	} else {
+		if err = bucketManager.TurnOffIndexPage(bucketName); err != nil {
+			return
+		}
+	}
 	d.SetId(bucketName)
 	return resourceReadQiniuBucket(d, m)
 }
@@ -315,6 +335,7 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	d.Set("private", bucketInfo.IsPrivate())
 	d.Set("image_url", bucketInfo.Source)
 	d.Set("image_host", bucketInfo.Host)
+	d.Set("index_page_on", bucketInfo.IndexPageOn())
 	d.Set("lifecycle_rules", lifeCycleRules)
 	d.Set("cors_rules", corsRules)
 
@@ -358,13 +379,12 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 
 	if d.HasChange("private") {
 		if d.Get("private").(bool) {
-			if err = bucketManager.MakeBucketPrivate(bucketName); err != nil {
-				return
-			}
+			err = bucketManager.MakeBucketPrivate(bucketName)
 		} else {
-			if err = bucketManager.MakeBucketPublic(bucketName); err != nil {
-				return
-			}
+			err = bucketManager.MakeBucketPublic(bucketName)
+		}
+		if err != nil {
+			return
 		}
 	}
 
@@ -376,13 +396,28 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 			imageURL := v.(string)
 			if v, ok = d.GetOk("image_host"); ok {
 				imageHost := v.(string)
-				if err = bucketManager.SetImageWithHost(imageURL, bucketName, imageHost); err != nil {
-					return
-				}
+				err = bucketManager.SetImageWithHost(imageURL, bucketName, imageHost)
 			} else {
-				if err = bucketManager.SetImage(imageURL, bucketName); err != nil {
-					return
-				}
+				err = bucketManager.SetImage(imageURL, bucketName)
+			}
+			if err != nil {
+				return
+			}
+		}
+	}
+	if d.HasChange("index_page_on") {
+		if v, ok = d.GetOk("index_page_on"); ok {
+			if v.(bool) {
+				err = bucketManager.TurnOnIndexPage(bucketName)
+			} else {
+				err = bucketManager.TurnOffIndexPage(bucketName)
+			}
+			if err != nil {
+				return
+			}
+		} else {
+			if err = bucketManager.TurnOffIndexPage(bucketName); err != nil {
+				return
 			}
 		}
 	}
