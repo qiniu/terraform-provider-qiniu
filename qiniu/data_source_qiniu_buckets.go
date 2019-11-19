@@ -1,7 +1,9 @@
 package qiniu
 
 import (
+	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -54,6 +56,30 @@ func dataSourceQiniuBuckets() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"index_page_on": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"max_age": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"anti_leech_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"allow_empty_referer": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"referer_pattern": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"only_enable_anti_leech_for_cdn": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -96,11 +122,34 @@ func dataSourceQiniuBucketsAttributes(d *schema.ResourceData, buckets []qiniu_st
 
 	for _, bucket := range buckets {
 		attributes := map[string]interface{}{
-			"name":       bucket.Name,
-			"region_id":  bucket.Info.Region,
-			"private":    bucket.Info.IsPrivate(),
-			"image_url":  bucket.Info.Source,
-			"image_host": bucket.Info.Host,
+			"name":          bucket.Name,
+			"region_id":     bucket.Info.Region,
+			"private":       bucket.Info.IsPrivate(),
+			"image_url":     bucket.Info.Source,
+			"image_host":    bucket.Info.Host,
+			"index_page_on": bucket.Info.IndexPageOn(),
+			"max_age":       bucket.Info.MaxAge,
+		}
+
+		switch bucket.Info.AntiLeechMode {
+		case 0:
+			attributes["anti_leech_mode"] = ""
+			attributes["referer_pattern"] = ""
+			attributes["allow_empty_referer"] = ""
+			attributes["only_enable_anti_leech_for_cdn"] = ""
+		case 1:
+			attributes["anti_leech_mode"] = "whitelist"
+			attributes["referer_pattern"] = strings.Join(bucket.Info.ReferWl, ";")
+			attributes["allow_empty_referer"] = bucket.Info.NoRefer
+			attributes["only_enable_anti_leech_for_cdn"] = !bucket.Info.EnableSource
+		case 2:
+			attributes["anti_leech_mode"] = "blacklist"
+			attributes["referer_pattern"] = strings.Join(bucket.Info.ReferBl, ";")
+			attributes["allow_empty_referer"] = bucket.Info.NoRefer
+			attributes["only_enable_anti_leech_for_cdn"] = !bucket.Info.EnableSource
+		default:
+			err = errors.New("\"anti_leech_mode\" returns by server contains invalid mode")
+			return
 		}
 
 		ids = append(ids, bucket.Name)

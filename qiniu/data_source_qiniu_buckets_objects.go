@@ -1,6 +1,8 @@
 package qiniu
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	qiniu_storage "github.com/qiniu/api.v7/v7/storage"
 )
@@ -50,6 +52,10 @@ func dataSourceQiniuBucketsObjects() *schema.Resource {
 							Computed: true,
 						},
 						"content_etag": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"storage_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -105,6 +111,14 @@ func dataSourceQiniuBucketsObjectsAttributes(d *schema.ResourceData, bucket stri
 			"content_etag":   entry.Hash,
 			"content_length": entry.Fsize,
 			"content_type":   entry.MimeType,
+		}
+		switch entry.Type {
+		case 0:
+			attributes["storage_type"] = NormalStorage
+		case 1:
+			attributes["storage_type"] = InfrequentStorage
+		default:
+			panic(fmt.Sprintf("Unrecognized storage type: %#v", entry.Type))
 		}
 		ids = append(ids, getEntryFromBucketNameAndKey(bucket, entry.Key))
 		keys = append(keys, entry.Key)

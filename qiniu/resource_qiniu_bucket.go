@@ -389,7 +389,7 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 		d.Set("allow_empty_referer", bucketInfo.NoRefer)
 		d.Set("only_enable_anti_leech_for_cdn", !bucketInfo.EnableSource)
 	default:
-		err = errors.New("\"anti_leech_mode\" returns server contains invalid mode")
+		err = errors.New("\"anti_leech_mode\" returns by server contains invalid mode")
 		return
 	}
 	return nil
