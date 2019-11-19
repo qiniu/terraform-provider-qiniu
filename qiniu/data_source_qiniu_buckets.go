@@ -134,9 +134,9 @@ func dataSourceQiniuBucketsAttributes(d *schema.ResourceData, buckets []qiniu_st
 		switch bucket.Info.AntiLeechMode {
 		case 0:
 			attributes["anti_leech_mode"] = ""
-			attributes["referer_pattern"] = ""
-			attributes["allow_empty_referer"] = ""
-			attributes["only_enable_anti_leech_for_cdn"] = ""
+			attributes["referer_pattern"] = nil
+			attributes["allow_empty_referer"] = nil
+			attributes["only_enable_anti_leech_for_cdn"] = nil
 		case 1:
 			attributes["anti_leech_mode"] = "whitelist"
 			attributes["referer_pattern"] = strings.Join(bucket.Info.ReferWl, ";")
