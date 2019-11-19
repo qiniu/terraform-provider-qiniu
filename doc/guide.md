@@ -112,8 +112,8 @@ provider "qiniu" {
 
 ```hcl
 resource "qiniu_bucket" "basic_bucket" {
-  name      = "basic-test-terraform-1"  # Bucket Name
-  region_id = "z0"                      # Bucket Region, "z0" means East China
+  name      = "basic-test-terraform-1"  # Bucket 名称
+  region_id = "z0"                      # Bucket 区域, "z0" 表示华东地区
 }
 ```
 
@@ -146,15 +146,119 @@ resource "qiniu_bucket" "basic_bucket" {
 }
 ```
 
+可以额外指定 `index_page_on` 参数设置默认首页
+
+```hcl
+resource "qiniu_bucket" "basic_bucket" {
+  name      = "basic-test-terraform-1"
+  region_id = "z0"
+  index_page_on = true
+}
+```
+
+可以额外指定 `lifecycle_rules` 参数设置生命周期规则
+
+```hcl
+resource "qiniu_bucket" "basic_bucket" {
+  name      = "basic-test-terraform-1"
+  region_id = "z0"
+  lifecycle_rules {
+    name = "rule_1"                      # 规则名称，该参数必填
+    prefix = "users/"                    # 规则匹配的对象名称前缀
+    to_line_after_days = 20              # 用户新创建的文件将在指定天数后自动转为低频存储
+    delete_after_days = 30               # 用户新创建的文件将在指定天数后自动删除
+  }
+
+  lifecycle_rules {                      # 可以设置多条生命周期规则
+    name = "rule_2"                      # 规则名称，该参数必填
+    prefix = "admin/"                    # 规则匹配的对象名称前缀
+    to_line_after_days = 40              # 用户新创建的文件将在指定天数后自动转为低频存储
+    delete_after_days = 60               # 用户新创建的文件将在指定天数后自动删除
+  }
+}
+```
+
+可以额外指定 `cors_rules` 参数设置跨域规则（如果不设置，则默认允许任何跨域请求）
+
+```hcl
+resource "qiniu_bucket" "basic_bucket" {
+  name      = "basic-test-terraform-1"
+  region_id = "z0"
+  cors_rules {
+    allowed_origins = ["http://www.test1.com"]     # 允许的域名列表，该参数必填，支持通配符 *
+    allowed_methods = ["GET", "POST"]              # 允许的 HTTP 方法列表，该参数必填，不支持通配符
+    allowed_headers = ["X-Reqid", "Content-Type"]  # 允许的 HTTP 头列表，支持通配符 *，但只能是用单独的 * 表示允许全部 HTTP 头，而不能部分匹配，如果为空或不填，则表示不允许任何 HTTP 头
+    exposed_headers = ["X-Test-1", "X-Test-2"]     # 暴露的 HTTP 头列表，不支持通配符，X-Log，X-Reqid 是默认的会暴露的 HTTP 头
+    max_age = 20                                   # 结果可以缓存的时间，单位为秒。如果为空或不填，则不缓存
+  }
+
+  cors_rules {                                     # 可以设置多条跨域规则，但不能超过 10 条
+    allowed_origins = ["http://www.test2.com"]     # 允许的域名列表，该参数必填，支持通配符 *
+    allowed_methods = ["GET", "POST", "HEAD"]      # 允许的 HTTP 方法列表，该参数必填，不支持通配符
+                                                   # 其他参数均可以省略
+  }
+}
+```
+
+可以额外指定 `anti_leech_mode`，`allow_empty_referer`，`referer_pattern`，`only_enable_anti_leech_for_cdn` 等参数设置 Referer 防盗链
+
+`anti_leech_mode` 参数表示设置的防盗链模式，总共有两种模式可以选择，白名单模式和黑名单模式
+
+```hcl
+resource "qiniu_bucket" "basic_bucket" {
+  name      = "basic-test-terraform-1"
+  region_id = "z0"
+  anti_leech_mode = "blacklist"                             # 设置 Referer 黑名单，表示凡是能匹配 Referer 规则的域名均被禁止访问，该参数必填
+  referer_pattern = ["foo.com", "*.bar.com", "sub.foo.com"] # Referer 规则，支持通配符 *
+  allow_empty_referer = true                                # 是否允许空 Referer
+  only_enable_anti_leech_for_cdn = false                    # 是否开启源站防盗链，默认只会为 CDN 请求配置防盗链
+}
+```
+
+```hcl
+resource "qiniu_bucket" "basic_bucket" {
+  name      = "basic-test-terraform-1"
+  region_id = "z0"
+  anti_leech_mode = "whitelist"                             # 设置 Referer 白名单，表示只有能匹配 Referer 规则的域名才被允许访问，该参数必填
+  referer_pattern = ["*"]                                   # Referer 规则，支持通配符 *
+                                                            # 其他参数均可以省略
+}
+```
+
+可以额外指定 `max_age` 参数设置文件客户端缓存时间
+
+```hcl
+resource "qiniu_bucket" "basic_bucket" {
+  name      = "basic-test-terraform-1"
+  region_id = "z0"
+  max_age = 31536000                       # 允许客户端缓存时长，单位为秒
+}
+```
+
+可以额外指定 `tagging` 参数设置 Bucket 标签
+
+```hcl
+resource "qiniu_bucket" "basic_bucket" {
+  name      = "basic-test-terraform-1"
+  region_id = "z0"
+  tagging = {
+      env = "test"                         # 设置 Bucket 第一个标签
+      kind = "basic"                       # 设置 Bucket 第二个标签
+                                           # 每个 Bucket 不能设置超过十对标签
+  }
+}
+```
+
 ### 上传文件
 
 可以将指定路径的文件上传至指定 Bucket
 
 ```hcl
 resource "qiniu_bucket" "basic_object" {
-  bucket    = "basic-test-terraform-1"  # Bucket Name
-  key       = "keyname"                 # Key Name
-  source    = "/path/to/file"
+  bucket        = "basic-test-terraform-1"  # Bucket 名称
+  key           = "keyname"                 # 对象名称
+  source        = "/path/to/file"           # 源文件路径
+  storage_type  = "infrequent"              # 存储类型，只能填写 infrequent 表示低频存储，如果为空或不填则表示普通存储
 }
 ```
 
