@@ -41,6 +41,10 @@ resource "qiniu_bucket" "basic_bucket" {
     allow_empty_referer = true
     only_enable_anti_leech_for_cdn = false
     max_age = 86400
+    tagging = {
+        env = "test"
+        kind = "basic"
+    }
 }
                 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -58,6 +62,9 @@ resource "qiniu_bucket" "basic_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "allow_empty_referer", "true"),
 					resource.TestCheckResourceAttr(resourceID, "only_enable_anti_leech_for_cdn", "false"),
 					resource.TestCheckResourceAttr(resourceID, "max_age", "86400"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.%", "2"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.env", "test"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.kind", "basic"),
 				),
 			}},
 		})
@@ -599,6 +606,10 @@ resource "qiniu_bucket" "update_bucket" {
 resource "qiniu_bucket" "update_bucket" {
     name = "update-test-terraform"
     region_id = "z2"
+    tagging = {
+        environment = "test"
+        kind = "basic"
+    }
 }
                 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -608,6 +619,47 @@ resource "qiniu_bucket" "update_bucket" {
 					resource.TestCheckResourceAttr(resourceID, "private", "false"),
 					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
 					resource.TestCheckResourceAttr(resourceID, "cors_rules.#", "0"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.%", "2"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.environment", "test"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.kind", "basic"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+    tagging = {
+        environment = "production"
+        kind = "advanced"
+        user = "bachue"
+    }
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.%", "3"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.environment", "production"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.kind", "advanced"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.user", "bachue"),
+				),
+			}, {
+				Config: `
+resource "qiniu_bucket" "update_bucket" {
+    name = "update-test-terraform"
+    region_id = "z2"
+}
+                `,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckQiniuBucketItemExists(resourceID),
+					resource.TestCheckResourceAttr(resourceID, "name", "update-test-terraform"),
+					resource.TestCheckResourceAttr(resourceID, "region_id", "z2"),
+					resource.TestCheckResourceAttr(resourceID, "private", "false"),
+					resource.TestCheckResourceAttr(resourceID, "index_page_on", "false"),
+					resource.TestCheckResourceAttr(resourceID, "tagging.%", "0"),
 				),
 			}},
 		})

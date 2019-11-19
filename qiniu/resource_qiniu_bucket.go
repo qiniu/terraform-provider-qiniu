@@ -154,6 +154,14 @@ func resourceQiniuBucket() *schema.Resource {
 				Optional:    true,
 				Description: "Only enable anti leech mode for CDN",
 			},
+			"tagging": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Description: "Bucket tagging",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"max_age": {
 				Type:        schema.TypeInt,
 				Optional:    true,
@@ -308,6 +316,16 @@ func resourceCreateQiniuBucket(d *schema.ResourceData, m interface{}) (err error
 			return
 		}
 	}
+	if v, ok = d.GetOk("tagging"); ok {
+		strValMap := v.(map[string]interface{})
+		strMap := make(map[string]string, len(strValMap))
+		for key, value := range strValMap {
+			strMap[key] = value.(string)
+		}
+		if err = bucketManager.SetTagging(bucketName, strMap); err != nil {
+			return
+		}
+	}
 
 	d.SetId(bucketName)
 	return resourceReadQiniuBucket(d, m)
@@ -318,6 +336,7 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 		bucketInfo     qiniu_storage.BucketInfo
 		lifeCycleRules []qiniu_storage.BucketLifeCycleRule
 		corsRules      []qiniu_storage.CorsRule
+		tagging        map[string]string
 	)
 
 	bucketManager := m.(*Client).BucketManager
@@ -328,6 +347,9 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	}
 	if err == nil {
 		corsRules, err = bucketManager.GetCorsRules(bucketName)
+	}
+	if err == nil {
+		tagging, err = bucketManager.GetTagging(bucketName)
 	}
 
 	if err != nil {
@@ -348,6 +370,7 @@ func resourceReadQiniuBucket(d *schema.ResourceData, m interface{}) (err error) 
 	d.Set("index_page_on", bucketInfo.IndexPageOn())
 	d.Set("lifecycle_rules", lifeCycleRules)
 	d.Set("cors_rules", corsRules)
+	d.Set("tagging", tagging)
 
 	switch bucketInfo.AntiLeechMode {
 	case 0:
@@ -493,9 +516,10 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 	}
 
 	if d.HasChange("cors_rules") {
+		var corsRules []qiniu_storage.CorsRule
 		if v, ok = d.GetOk("cors_rules"); ok {
 			set := v.(*schema.Set)
-			corsRules := make([]qiniu_storage.CorsRule, 0, set.Len())
+			corsRules = make([]qiniu_storage.CorsRule, 0, set.Len())
 			for _, r := range set.List() {
 				var (
 					corsRule qiniu_storage.CorsRule
@@ -527,9 +551,9 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 				}
 				corsRules = append(corsRules, corsRule)
 			}
-			if err = bucketManager.AddCorsRules(bucketName, corsRules); err != nil {
-				return
-			}
+		}
+		if err = bucketManager.AddCorsRules(bucketName, corsRules); err != nil {
+			return
 		}
 	}
 
@@ -561,6 +585,23 @@ func resourcePartialUpdateQiniuBucket(d *schema.ResourceData, m interface{}) (er
 		}
 		if err = bucketManager.SetReferAntiLeechMode(bucketName, &referAntiLeechConfig); err != nil {
 			return
+		}
+	}
+
+	if d.HasChange("tagging") {
+		if v, ok = d.GetOk("tagging"); ok {
+			strValMap := v.(map[string]interface{})
+			tagging := make(map[string]string, len(strValMap))
+			for key, value := range strValMap {
+				tagging[key] = value.(string)
+			}
+			if err = bucketManager.SetTagging(bucketName, tagging); err != nil {
+				return err
+			}
+		} else {
+			if err = bucketManager.ClearTagging(bucketName); err != nil {
+				return err
+			}
 		}
 	}
 
