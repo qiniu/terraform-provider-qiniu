@@ -76,14 +76,26 @@ const (
 
 func resourcePutQiniuBucketObject(d *schema.ResourceData, m interface{}) (err error) {
 	var (
-		reader io.ReaderAt
-		size   int64
-		bucket = d.Get("bucket").(string)
-		key    = d.Get("key").(string)
-		entry  = getEntryFromBucketNameAndKey(bucket, key)
+		reader   io.ReaderAt
+		size     int64
+		bucket   = d.Get("bucket").(string)
+		key      = d.Get("key").(string)
+		entry    = getEntryFromBucketNameAndKey(bucket, key)
+		fileType int
 	)
 
-	putPolicy := qiniu_storage.PutPolicy{Scope: entry, DetectMime: 1}
+	if storageType, ok := d.GetOk("storage_type"); ok {
+		switch storageType.(string) {
+		case NormalStorage:
+			fileType = 0
+		case InfrequentStorage:
+			fileType = 1
+		default:
+			panic(fmt.Sprintf("Unrecognized storage type: %#v", storageType))
+		}
+	}
+
+	putPolicy := qiniu_storage.PutPolicy{Scope: entry, DetectMime: 1, FileType: fileType}
 	uploadToken := putPolicy.UploadToken(m.(*Client).Auth)
 
 	if source, ok := d.GetOk("source"); ok {
@@ -110,19 +122,6 @@ func resourcePutQiniuBucketObject(d *schema.ResourceData, m interface{}) (err er
 		context.Background(), nil, uploadToken, key, reader, size, &qiniu_storage.RputExtra{TryTimes: 5},
 	); err != nil {
 		return
-	}
-	if storageType, ok := d.GetOk("storage_type"); ok {
-		switch storageType.(string) {
-		case NormalStorage:
-			err = m.(*Client).BucketManager.ChangeType(bucket, key, 0)
-		case InfrequentStorage:
-			err = m.(*Client).BucketManager.ChangeType(bucket, key, 1)
-		default:
-			panic(fmt.Sprintf("Unrecognized storage type: %#v", storageType))
-		}
-		if err != nil {
-			return
-		}
 	}
 	d.SetId(entry)
 	return resourceReadQiniuBucketObject(d, m)
