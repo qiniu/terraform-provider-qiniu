@@ -3,6 +3,7 @@ package qiniu
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -37,6 +38,12 @@ func resourceQiniuBucketObject() *schema.Resource {
 				Optional:      true,
 				ConflictsWith: []string{"source"},
 			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  "Storage type",
+				ValidateFunc: validateObjectStorageType,
+			},
 			"content_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -61,6 +68,11 @@ func resourceQiniuBucketObject() *schema.Resource {
 		},
 	}
 }
+
+const (
+	NormalStorage     = ""
+	InfrequentStorage = "infrequent"
+)
 
 func resourcePutQiniuBucketObject(d *schema.ResourceData, m interface{}) (err error) {
 	var (
@@ -99,6 +111,19 @@ func resourcePutQiniuBucketObject(d *schema.ResourceData, m interface{}) (err er
 	); err != nil {
 		return
 	}
+	if storageType, ok := d.GetOk("storage_type"); ok {
+		switch storageType.(string) {
+		case NormalStorage:
+			err = m.(*Client).BucketManager.ChangeType(bucket, key, 0)
+		case InfrequentStorage:
+			err = m.(*Client).BucketManager.ChangeType(bucket, key, 1)
+		default:
+			panic(fmt.Sprintf("Unrecognized storage type: %#v", storageType))
+		}
+		if err != nil {
+			return
+		}
+	}
 	d.SetId(entry)
 	return resourceReadQiniuBucketObject(d, m)
 }
@@ -112,6 +137,14 @@ func resourceReadQiniuBucketObject(d *schema.ResourceData, m interface{}) error 
 		d.Set("content_type", fileInfo.MimeType)
 		d.Set("content_length", fileInfo.Fsize)
 		d.Set("content_etag", fileInfo.Hash)
+		switch fileInfo.Type {
+		case 0:
+			d.Set("storage_type", NormalStorage)
+		case 1:
+			d.Set("storage_type", InfrequentStorage)
+		default:
+			panic(fmt.Sprintf("Unrecognized storage type: %#v", fileInfo.Type))
+		}
 		return nil
 	}
 }

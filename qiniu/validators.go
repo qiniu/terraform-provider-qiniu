@@ -111,8 +111,7 @@ func validateAntiLeechMode(v interface{}, attributeName string) (warns []string,
 }
 
 func validateHTTPMethods(v interface{}, attributeName string) (warns []string, errs []error) {
-	methodName := v.(string)
-	switch strings.ToLower(methodName) {
+	switch strings.ToLower(v.(string)) {
 	case "get":
 	case "head":
 	case "post":
@@ -124,6 +123,16 @@ func validateHTTPMethods(v interface{}, attributeName string) (warns []string, e
 	case "trace":
 	default:
 		errs = append(errs, fmt.Errorf("%q is an invalid http method", attributeName))
+	}
+	return
+}
+
+func validateObjectStorageType(v interface{}, attributeName string) (warns []string, errs []error) {
+	switch strings.ToLower(v.(string)) {
+	case NormalStorage:
+	case InfrequentStorage:
+	default:
+		errs = append(errs, fmt.Errorf("%q is an invalid object storage type", attributeName))
 	}
 	return
 }

@@ -51,6 +51,7 @@ resource "qiniu_bucket_object" "test_object" {
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_type", "text/plain"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_length", fmt.Sprintf("%d", len("hello world"))),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_etag", "FiqubDXJT8-0FdvpX0CLnOke6Ebt"),
+					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "storage_type", ""),
 				),
 			}},
 		})
@@ -81,6 +82,7 @@ resource "qiniu_bucket_object" "test_object" {
     bucket = "${qiniu_bucket.basic_bucket.name}"
     key = "file-2.txt"
     content = %q
+    storage_type = "infrequent"
 }
 	                `, randomString, content),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -94,6 +96,7 @@ resource "qiniu_bucket_object" "test_object" {
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_type", "text/plain"),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_length", fmt.Sprintf("%d", len(content))),
 					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "content_etag", "FmO9UHw3jb69Wfd4U96mxMLDn37X"),
+					resource.TestCheckResourceAttr("qiniu_bucket_object.test_object", "storage_type", "infrequent"),
 				),
 			}},
 		})
@@ -146,6 +149,24 @@ resource "qiniu_bucket_object" "test_object" {
 }
                 `,
 				ExpectError: regexp.MustCompile("no such file or directory"),
+			}},
+		})
+	})
+
+	It("should reject if storage_type is invalid", func() {
+		resource.Test(MakeT("TestCreateInvalidQiniuBucketObject"), resource.TestCase{
+			PreCheck:  testPreCheck,
+			Providers: providers,
+			Steps: []resource.TestStep{{
+				Config: `
+resource "qiniu_bucket_object" "test_object" {
+    bucket = "z0-bucket"
+    key = "file.txt"
+    content = "abcdef"
+    storage_type = "invalid_type"
+}
+                `,
+				ExpectError: regexp.MustCompile("invalid object storage type"),
 			}},
 		})
 	})
