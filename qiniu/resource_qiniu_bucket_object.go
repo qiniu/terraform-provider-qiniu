@@ -32,6 +32,7 @@ func resourceQiniuBucketObject() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"content"},
+				ValidateFunc:  validateObjectSource,
 			},
 			"content": {
 				Type:          schema.TypeString,

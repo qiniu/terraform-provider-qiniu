@@ -3,6 +3,7 @@ package qiniu
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -123,6 +124,21 @@ func validateHTTPMethods(v interface{}, attributeName string) (warns []string, e
 	case "trace":
 	default:
 		errs = append(errs, fmt.Errorf("%q is an invalid http method", attributeName))
+	}
+	return
+}
+
+func validateObjectSource(v interface{}, attributeName string) (warns []string, errs []error) {
+	filePath := v.(string)
+	if file, err := os.Open(filePath); err != nil {
+		errs = append(errs, fmt.Errorf("%q cannot be open", attributeName))
+	} else {
+		defer file.Close()
+		if fileInfo, err := file.Stat(); err != nil {
+			errs = append(errs, fmt.Errorf("%q cannot be stated", attributeName))
+		} else if fileInfo.IsDir() {
+			errs = append(errs, fmt.Errorf("%q is a directory", attributeName))
+		}
 	}
 	return
 }
