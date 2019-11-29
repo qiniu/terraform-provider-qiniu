@@ -148,7 +148,7 @@ resource "qiniu_bucket_object" "test_object" {
     source = "/not/existed"
 }
                 `,
-				ExpectError: regexp.MustCompile("no such file or directory"),
+				ExpectError: regexp.MustCompile(regexp.QuoteMeta("config is invalid: \"source\" cannot be open")),
 			}},
 		})
 	})
