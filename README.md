@@ -4,7 +4,7 @@
 - Website: https://www.terraform.io
 - [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 - [![LICENSE](https://img.shields.io/badge/license-Mozilla--2.0-yellowgreen)](https://www.mozilla.org/en-US/MPL/2.0/)
-- [![Build Status](https://api.travis-ci.org/bachue/terraform-provider-qiniu.svg?branch=master)](https://travis-ci.org/bachue/terraform-provider-qiniu)
+- [![Build Status](https://travis-ci.org/qiniu/terraform-provider-qiniu.svg?branch=master)](https://travis-ci.org/qiniu/terraform-provider-qiniu)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
 
 <img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px">
