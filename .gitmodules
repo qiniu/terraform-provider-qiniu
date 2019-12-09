@@ -1,4 +1,0 @@
-[submodule "qiniu/sdk"]
-    path = qiniu/sdk
-    url = https://github.com/bachue/api.v7.git
-    branch = master
