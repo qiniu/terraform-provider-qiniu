@@ -1,6 +1,7 @@
 package qiniu_test
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -119,12 +120,12 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglong"
+    name = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglong-%s"
     region_id = "z2"
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("must not be longer than 63 characters"),
 			}},
 		})
@@ -134,12 +135,12 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z100"
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("is invalid"),
 			}},
 		})
@@ -149,13 +150,13 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     image_url = "www.qiniu.com"
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("must be valid url"),
 			}},
 		})
@@ -165,14 +166,14 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     image_url = "http://www.qiniu.com"
     image_host = "http://www.qiniu.com"
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("must be valid host"),
 			}},
 		})
@@ -182,15 +183,15 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     lifecycle_rules {
         name = "superlongsuperlongsuperlongsuperlongsuperlongsuperlong"
     }
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("must not be longer than and equal to 50 characters"),
 			}},
 		})
@@ -200,13 +201,13 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     anti_leech_mode = "invalid"
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("\"anti_leech_mode\" contains invalid mode"),
 			}},
 		})
@@ -216,15 +217,15 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     cors_rules {
         allowed_methods = ["GET"]
     }
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("The argument \"allowed_origins\" is required, but no definition was found."),
 			}},
 		})
@@ -234,15 +235,15 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     cors_rules {
         allowed_origins = ["http://abc.com"]
     }
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("The argument \"allowed_methods\" is required, but no definition was found."),
 			}},
 		})
@@ -252,16 +253,16 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     cors_rules {
         allowed_origins = []
         allowed_methods = ["GET"]
     }
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("invalid argument"),
 			}},
 		})
@@ -271,16 +272,16 @@ resource "qiniu_bucket" "invalid_bucket" {
 		resource.Test(MakeT("TestCreateInvalidQiniuBucket"), resource.TestCase{
 			Providers: providers,
 			Steps: []resource.TestStep{{
-				Config: `
+				Config: fmt.Sprintf(`
 resource "qiniu_bucket" "invalid_bucket" {
-    name = "valid-name"
+    name = "valid-name-%s"
     region_id = "z1"
     cors_rules {
         allowed_origins = ["http://abc.com"]
         allowed_methods = ["OPEN"]
     }
 }
-                `,
+                `, timeString()),
 				ExpectError: regexp.MustCompile("invalid http method"),
 			}},
 		})
